@@ -17,6 +17,7 @@ const mainLinks = [
   { href: "/video-generator", label: "Video" },
   { href: "/history", label: "History" },
   { href: "/admin", label: "Admin" },
+  { href: "/login", label: "Login" },
 ];
 
 export default function RootLayout({
@@ -42,6 +43,8 @@ export default function RootLayout({
                     className={
                       link.label === "Admin"
                         ? "rounded-full bg-blue-600/20 px-3 py-2 text-blue-300 hover:bg-blue-600/30"
+                        : link.label === "Login"
+                        ? "rounded-full bg-green-600/20 px-3 py-2 text-green-300 hover:bg-green-600/30"
                         : "rounded-full px-3 py-2 hover:bg-white/10 hover:text-white"
                     }
                   >
