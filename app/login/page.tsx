@@ -26,11 +26,12 @@ export default function LoginPage() {
       return;
     }
 
+    document.cookie =
+      "admin_logged_in=true; path=/; max-age=604800; SameSite=Lax; Secure";
+
     setMessage("Login successful. Opening dashboard...");
 
-    setTimeout(() => {
-      window.location.assign("/dashboard");
-    }, 500);
+    window.location.href = "/dashboard";
   }
 
   return (
@@ -62,6 +63,7 @@ export default function LoginPage() {
         />
 
         <button
+          type="button"
           onClick={login}
           className="mt-5 w-full rounded-2xl bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-500"
         >
