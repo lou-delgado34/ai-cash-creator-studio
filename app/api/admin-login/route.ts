@@ -8,9 +8,11 @@ export async function POST(req: Request) {
     email === process.env.ADMIN_EMAIL &&
     password === process.env.ADMIN_PASSWORD
   ) {
-    cookies().set("admin_logged_in", "true", {
+    const cookieStore = await cookies();
+
+    cookieStore.set("admin_logged_in", "true", {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
@@ -19,5 +21,8 @@ export async function POST(req: Request) {
     return Response.json({ success: true });
   }
 
-  return Response.json({ success: false, error: "Wrong email or password." });
+  return Response.json({
+    success: false,
+    error: "Wrong email or password.",
+  });
 }
