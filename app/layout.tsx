@@ -1,11 +1,19 @@
-import type { Metadata } from "next";
-import Link from "next/link";
 import "./globals.css";
+import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "AI Cash Creator Studio",
-  description: "AI system",
-};
+const mainLinks = [
+  { href: "/", label: "Home" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/ai-models", label: "AI Models" },
+  { href: "/prompt-studio", label: "Content" },
+  { href: "/image-studio", label: "Images" },
+  { href: "/voice-studio", label: "Voice" },
+  { href: "/video-generator", label: "Video" },
+  { href: "/history", label: "History" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/admin", label: "Admin" },
+  { href: "/login", label: "Login" },
+];
 
 export default function RootLayout({
   children,
@@ -15,21 +23,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-black text-white">
-        <nav className="flex flex-wrap gap-2 p-4 border-b border-gray-800">
-          <Link href="/" className="nav">Home</Link>
-          <Link href="/dashboard" className="nav">Dashboard</Link>
-          <Link href="/ai-models" className="nav">AI Models</Link>
-          <Link href="/prompt-studio" className="nav">Content</Link>
-          <Link href="/image-studio" className="nav">Images</Link>
-          <Link href="/voice-studio" className="nav">Voice</Link>
-          <Link href="/video-generator" className="nav">Video</Link>
-          <Link href="/pricing" className="nav">Pricing</Link>
-          <Link href="/history" className="nav">History</Link>
-          <Link href="/admin" className="nav">Admin</Link>
-          <Link href="/login" className="nav">Login</Link>
+        <nav className="sticky top-0 z-50 border-b border-white/10 bg-black/90 px-6 py-4">
+          <div className="flex flex-wrap gap-3">
+            {mainLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold hover:bg-zinc-800"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </nav>
 
-        <div className="p-6">{children}</div>
+        {children}
       </body>
     </html>
   );
