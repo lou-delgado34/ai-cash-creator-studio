@@ -1,39 +1,62 @@
+"use client";
+
+import { useState } from "react";
+
 export default function LoginPage() {
+  const [email, setEmail] = useState("lou.delgado.pfs@gmail.com");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  async function login() {
+    setMessage("Checking login...");
+
+    const response = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      setMessage(data.error || "Login failed.");
+      return;
+    }
+
+    document.cookie = "admin_logged_in=true; path=/; max-age=604800";
+    window.location.href = "/dashboard";
+  }
+
   return (
-    <main className="min-h-screen bg-black px-6 py-10 text-white">
-      <section className="mx-auto max-w-md rounded-3xl border border-white/10 bg-zinc-900 p-6">
-        <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-          Admin Login
-        </p>
+    <main style={{ minHeight: "100vh", background: "#000", color: "#fff", padding: 32 }}>
+      <section style={{ maxWidth: 480, margin: "40px auto", background: "#18181b", padding: 32, borderRadius: 24 }}>
+        <p style={{ color: "#60a5fa", fontWeight: 800 }}>ADMIN LOGIN</p>
+        <h1 style={{ fontSize: 42 }}>Sign in</h1>
 
-        <h1 className="mt-3 text-4xl font-bold">Sign in</h1>
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          style={{ width: "100%", padding: 14, marginTop: 16, borderRadius: 14, background: "#000", color: "#fff" }}
+        />
 
-        <p className="mt-3 text-zinc-400">
-          Enter your admin email and password.
-        </p>
+        <input
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          type="password"
+          placeholder="Password"
+          style={{ width: "100%", padding: 14, marginTop: 16, borderRadius: 14, background: "#000", color: "#fff" }}
+        />
 
-        <form action="/api/admin-login" method="POST">
-          <input
-            name="email"
-            defaultValue="lou.delgado.pfs@gmail.com"
-            className="mt-6 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none"
-            placeholder="Email"
-          />
+        <button
+          onClick={login}
+          style={{ width: "100%", padding: 14, marginTop: 20, borderRadius: 14, background: "#2563eb", color: "#fff", fontWeight: 800 }}
+        >
+          Login
+        </button>
 
-          <input
-            name="password"
-            type="password"
-            className="mt-4 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none"
-            placeholder="Password"
-          />
-
-          <button
-            type="submit"
-            className="mt-5 w-full rounded-2xl bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-500"
-          >
-            Login
-          </button>
-        </form>
+        {message && <p style={{ marginTop: 16 }}>{message}</p>}
       </section>
     </main>
   );
