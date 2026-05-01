@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const formData = await req.formData();
-
-  const email = String(formData.get("email") || "");
-  const password = String(formData.get("password") || "");
+  const { email, password } = await req.json();
 
   if (
     email === process.env.ADMIN_EMAIL &&
     password === process.env.ADMIN_PASSWORD
   ) {
-    const response = NextResponse.redirect(new URL("/dashboard", req.url), {
-      status: 303,
-    });
+    const response = NextResponse.json({ success: true });
 
     response.cookies.set("admin_logged_in", "true", {
       httpOnly: true,
@@ -25,7 +20,8 @@ export async function POST(req: Request) {
     return response;
   }
 
-  return NextResponse.redirect(new URL("/login?error=wrong", req.url), {
-    status: 303,
+  return NextResponse.json({
+    success: false,
+    error: "Wrong email or password",
   });
 }
