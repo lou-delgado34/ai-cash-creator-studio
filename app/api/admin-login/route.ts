@@ -1,27 +1,27 @@
-import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const body = await req.json();
   const { email, password } = body;
 
-  if (
-    email === process.env.ADMIN_EMAIL &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
-    const cookieStore = await cookies();
+  const correctEmail = process.env.ADMIN_EMAIL;
+  const correctPassword = process.env.ADMIN_PASSWORD;
 
-    cookieStore.set("admin_logged_in", "true", {
+  if (email === correctEmail && password === correctPassword) {
+    const response = NextResponse.json({ success: true });
+
+    response.cookies.set("admin_logged_in", "true", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
 
-    return Response.json({ success: true });
+    return response;
   }
 
-  return Response.json({
+  return NextResponse.json({
     success: false,
     error: "Wrong email or password.",
   });

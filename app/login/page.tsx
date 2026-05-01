@@ -15,6 +15,7 @@ export default function LoginPage() {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({ email, password }),
     });
 
@@ -25,7 +26,11 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.href = "/dashboard";
+    setMessage("Login successful. Opening dashboard...");
+
+    setTimeout(() => {
+      window.location.assign("/dashboard");
+    }, 500);
   }
 
   return (
