@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-
 export async function POST(req: Request) {
   try {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!stripeSecretKey) {
+      return NextResponse.json(
+        { error: "Missing STRIPE_SECRET_KEY in Vercel." },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(stripeSecretKey);
+
     const body = await req.json();
     const plan = body.plan;
 
@@ -18,7 +27,7 @@ export async function POST(req: Request) {
 
     if (!priceId) {
       return NextResponse.json(
-        { error: "Missing price ID for this plan." },
+        { error: "Missing Stripe price ID for this plan." },
         { status: 400 }
       );
     }
@@ -29,18 +38,15 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${siteUrl}/dashboard?checkout=success`,
       cancel_url: `${siteUrl}/pricing?checkout=cancelled`,
     });
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
+    console.error("Stripe checkout error:", error);
+
     return NextResponse.json(
       { error: "Stripe checkout failed." },
       { status: 500 }
