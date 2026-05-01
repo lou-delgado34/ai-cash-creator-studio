@@ -1,27 +1,51 @@
-import { NextResponse } from "next/server";
+"use client";
 
-export async function POST(req: Request) {
-  const { email, password } = await req.json();
+import { useState } from "react";
 
-  if (
-    email === process.env.ADMIN_EMAIL &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
-    const response = NextResponse.json({ success: true });
+export default function AdminLogin() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-    response.cookies.set("admin_logged_in", "true", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+  const login = async () => {
+    const res = await fetch("/api/admin-login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
     });
 
-    return response;
-  }
+    const data = await res.json();
 
-  return NextResponse.json({
-    success: false,
-    error: "Wrong email or password",
-  });
+    if (data.success) {
+      window.location.assign("/dashboard");
+    } else {
+      alert("Wrong login");
+    }
+  };
+
+  return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="bg-zinc-900 p-6 rounded-xl w-[350px]">
+        <h2 className="text-xl mb-4">Admin Login</h2>
+
+        <input
+          className="w-full mb-3 p-2 bg-black border border-gray-700 rounded"
+          placeholder="Email"
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          type="password"
+          className="w-full mb-3 p-2 bg-black border border-gray-700 rounded"
+          placeholder="Password"
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          onClick={login}
+          className="w-full bg-blue-600 p-2 rounded"
+        >
+          Login
+        </button>
+      </div>
+    </div>
+  );
 }

@@ -1,62 +1,36 @@
-import './globals.css'
-import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import type { Metadata } from "next";
+import Link from "next/link";
+import "./globals.css";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+export const metadata: Metadata = {
+  title: "AI Cash Creator Studio",
+  description: "AI system",
+};
 
-const mainLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/ai-models', label: 'AI Models' },
-  { href: '/content', label: 'Content' },
-  { href: '/image-studio', label: 'Images' },
-  { href: '/voice-studio', label: 'Voice' },
-  { href: '/video-generator', label: 'Video' },
-  { href: '/history', label: 'History' },
-  { href: '/admin', label: 'Admin' },
-  { href: '/login', label: 'Login' },
-]
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-
   return (
     <html lang="en">
-      <body style={{ background: '#0b0b0b', color: 'white' }}>
-        
-        {/* NAVBAR */}
-        <nav style={{
-          display: 'flex',
-          gap: 10,
-          padding: 15,
-          borderBottom: '1px solid #222'
-        }}>
-          {mainLinks.map((link) => (
-            <Link key={link.href} href={link.href}>
-              <span style={{
-                padding: '6px 12px',
-                borderRadius: 20,
-                background: '#111',
-                cursor: 'pointer'
-              }}>
-                {link.label}
-              </span>
-            </Link>
-          ))}
+      <body className="bg-black text-white">
+        <nav className="flex flex-wrap gap-2 p-4 border-b border-gray-800">
+          <Link href="/" className="nav">Home</Link>
+          <Link href="/dashboard" className="nav">Dashboard</Link>
+          <Link href="/ai-models" className="nav">AI Models</Link>
+          <Link href="/prompt-studio" className="nav">Content</Link>
+          <Link href="/image-studio" className="nav">Images</Link>
+          <Link href="/voice-studio" className="nav">Voice</Link>
+          <Link href="/video-generator" className="nav">Video</Link>
+          <Link href="/pricing" className="nav">Pricing</Link>
+          <Link href="/history" className="nav">History</Link>
+          <Link href="/admin" className="nav">Admin</Link>
+          <Link href="/login" className="nav">Login</Link>
         </nav>
 
-        {/* PAGE CONTENT */}
-        <div>
-          {children}
-        </div>
-
+        <div className="p-6">{children}</div>
       </body>
     </html>
-  )
+  );
 }
