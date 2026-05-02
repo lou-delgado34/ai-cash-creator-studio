@@ -14,6 +14,10 @@ export async function POST(req: Request) {
       });
     }
 
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2024-06-20",
+    });
+
     const priceMap: Record<string, string | undefined> = {
       standard: process.env.STRIPE_STANDARD_PRICE_ID,
       pro: process.env.STRIPE_PRO_PRICE_ID,
@@ -24,11 +28,9 @@ export async function POST(req: Request) {
 
     if (!priceId) {
       return NextResponse.json({
-        error: `Missing Stripe price ID for ${plan}. Check Vercel Environment Variables.`,
+        error: "Missing price ID for selected plan.",
       });
     }
-
-    const stripe = new Stripe(stripeSecretKey);
 
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
@@ -36,15 +38,20 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${siteUrl}/dashboard?checkout=success`,
-      cancel_url: `${siteUrl}/pricing?checkout=cancelled`,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `${siteUrl}/success?plan=${plan}`,
+      cancel_url: `${siteUrl}/pricing`,
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json({
-      error: "Stripe checkout crashed. Check that your Stripe key and price IDs are test mode keys.",
+      error: "Stripe checkout failed.",
     });
   }
 }
