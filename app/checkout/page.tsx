@@ -1,9 +1,10 @@
-export default function CheckoutPage({
-  searchParams,
-}: {
-  searchParams: { plan?: string };
-}) {
-  const plan = searchParams.plan || "standard";
+"use client";
+
+import { useSearchParams } from "next/navigation";
+
+export default function CheckoutPage() {
+  const searchParams = useSearchParams();
+  const plan = searchParams.get("plan") || "standard";
 
   const plans: Record<string, { name: string; price: string }> = {
     standard: { name: "Standard", price: "$19/mo" },
@@ -12,6 +13,25 @@ export default function CheckoutPage({
   };
 
   const selected = plans[plan] || plans.standard;
+
+  async function goToStripe() {
+    const res = await fetch("/api/create-checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ plan }),
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    alert(data.error || "Stripe checkout failed.");
+  }
 
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
@@ -28,16 +48,12 @@ export default function CheckoutPage({
           {selected.price}
         </p>
 
-        <form action="/api/create-checkout" method="POST">
-          <input type="hidden" name="plan" value={plan} />
-
-          <button
-            type="submit"
-            className="mt-8 w-full rounded-2xl bg-blue-600 px-6 py-4 font-bold hover:bg-blue-500"
-          >
-            Continue to Payment
-          </button>
-        </form>
+        <button
+          onClick={goToStripe}
+          className="mt-8 w-full rounded-2xl bg-blue-600 px-6 py-4 font-bold hover:bg-blue-500"
+        >
+          Continue to Payment
+        </button>
 
         <a
           href="/pricing"
