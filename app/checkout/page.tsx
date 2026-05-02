@@ -1,65 +1,63 @@
-export default function CheckoutPage({
-  searchParams,
-}: {
-  searchParams: { plan?: string };
-}) {
-  const plan = searchParams.plan || "standard";
+"use client";
 
-  const plans: Record<string, { name: string; price: string; desc: string }> = {
-    free: {
-      name: "Free",
-      price: "$0",
-      desc: "Test the system with basic access.",
-    },
-    standard: {
-      name: "Standard",
-      price: "$19/mo",
-      desc: "For beginners creating consistent content.",
-    },
-    pro: {
-      name: "Pro",
-      price: "$74/mo",
-      desc: "For serious creators using video, voice, and image tools.",
-    },
-    elite: {
-      name: "Elite",
-      price: "$149/mo",
-      desc: "For scaling with advanced workflows and automation.",
-    },
+import { useSearchParams } from "next/navigation";
+
+export default function CheckoutPage() {
+  const searchParams = useSearchParams();
+  const plan = searchParams.get("plan") || "standard";
+
+  const plans: Record<string, { name: string; price: string }> = {
+    standard: { name: "Standard", price: "$19/mo" },
+    pro: { name: "Pro", price: "$74/mo" },
+    elite: { name: "Elite", price: "$149/mo" },
   };
 
-  const selectedPlan = plans[plan] || plans.standard;
+  const selected = plans[plan] || plans.standard;
+
+  async function goToStripe() {
+    const res = await fetch("/api/create-checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ plan }),
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    alert(data.error || "Stripe checkout failed.");
+  }
 
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <section className="mx-auto max-w-2xl rounded-3xl border border-white/10 bg-zinc-900 p-8">
         <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-          Checkout Preview
+          Stripe Checkout
         </p>
 
         <h1 className="mt-3 text-4xl font-bold">
-          You selected {selectedPlan.name}
+          You selected {selected.name}
         </h1>
 
         <p className="mt-4 text-5xl font-bold text-blue-400">
-          {selectedPlan.price}
+          {selected.price}
         </p>
 
-        <p className="mt-4 text-zinc-400">{selectedPlan.desc}</p>
-
-        <div className="mt-8 rounded-2xl border border-yellow-500/30 bg-yellow-950/20 p-5">
-          <h2 className="text-xl font-bold text-yellow-300">
-            Stripe Coming Next
-          </h2>
-          <p className="mt-2 text-zinc-300">
-            This page will connect to Stripe checkout next. For now it confirms
-            which plan the user selected.
-          </p>
-        </div>
+        <button
+          onClick={goToStripe}
+          className="mt-8 w-full rounded-2xl bg-blue-600 px-6 py-4 font-bold hover:bg-blue-500"
+        >
+          Continue to Payment
+        </button>
 
         <a
           href="/pricing"
-          className="mt-6 inline-block rounded-2xl bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-500"
+          className="mt-5 block text-center text-zinc-400 hover:text-white"
         >
           Back to Pricing
         </a>
