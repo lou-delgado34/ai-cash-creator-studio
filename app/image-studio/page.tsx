@@ -5,26 +5,34 @@ import { useState } from "react";
 export default function ImageStudio() {
   const [email, setEmail] = useState("");
   const [allowed, setAllowed] = useState(false);
-  const [checked, setChecked] = useState(false);
+  const [message, setMessage] = useState("");
 
   async function checkAccess() {
-    const res = await fetch("/api/check-plan", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
+    setMessage("Checking...");
 
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/check-plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
 
-    if (data.active) {
-      setAllowed(true);
-      localStorage.setItem("user_email", email);
-      localStorage.setItem("user_plan", data.plan);
+      const data = await res.json();
+
+      if (data.active) {
+        setAllowed(true);
+        setMessage("Access approved.");
+        localStorage.setItem("user_email", email);
+        localStorage.setItem("user_plan", data.plan);
+        return;
+      }
+
+      setMessage(data.error || "No active paid plan found.");
+    } catch {
+      setMessage("Check failed. The API route may be missing or broken.");
     }
-
-    setChecked(true);
   }
 
   if (!allowed) {
@@ -50,16 +58,9 @@ export default function ImageStudio() {
             Check Access
           </button>
 
-          {checked && (
-            <p className="mt-4 text-red-400">
-              No active paid plan found. Please upgrade.
-            </p>
-          )}
+          {message && <p className="mt-4 text-yellow-400">{message}</p>}
 
-          <a
-            href="/pricing"
-            className="mt-5 block text-center text-blue-400"
-          >
+          <a href="/pricing" className="mt-5 block text-center text-blue-400">
             Upgrade Now
           </a>
         </div>
