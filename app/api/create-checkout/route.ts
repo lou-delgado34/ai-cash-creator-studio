@@ -14,9 +14,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2024-06-20",
-    });
+    const stripe = new Stripe(stripeSecretKey);
 
     const priceMap: Record<string, string | undefined> = {
       standard: process.env.STRIPE_STANDARD_PRICE_ID,
