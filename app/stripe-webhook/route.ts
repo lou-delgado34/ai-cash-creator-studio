@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,9 +11,13 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  const sig = req.headers.get("stripe-signature")!;
+  const sig = req.headers.get("stripe-signature");
 
-  let event;
+  if (!sig) {
+    return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
+  }
+
+  let event: Stripe.Event;
 
   try {
     event = stripe.webhooks.constructEvent(
@@ -23,35 +25,27 @@ export async function POST(req: NextRequest) {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err) {
-    return new NextResponse("Webhook Error", { status: 400 });
+  } catch {
+    return NextResponse.json({ error: "Webhook signature failed" }, { status: 400 });
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as any;
+    const session = event.data.object as Stripe.Checkout.Session;
 
-    const email = session.customer_details?.email;
+    const email = session.customer_details?.email || session.customer_email;
 
-    if (!email) {
-      return NextResponse.json({ error: "No email found" });
+    if (email) {
+      await supabase.from("user_subscriptions").upsert({
+        email,
+        plan: "elite",
+        status: "active",
+        stripe_customer_id:
+          typeof session.customer === "string" ? session.customer : null,
+        stripe_subscription_id:
+          typeof session.subscription === "string" ? session.subscription : null,
+        updated_at: new Date().toISOString(),
+      });
     }
-
-    // Determine plan from price ID
-    let plan = "standard";
-
-    if (session.line_items?.data?.[0]?.price?.id === process.env.STRIPE_PRO_PRICE_ID) {
-      plan = "pro";
-    }
-
-    if (session.line_items?.data?.[0]?.price?.id === process.env.STRIPE_ELITE_PRICE_ID) {
-      plan = "elite";
-    }
-
-    await supabase.from("user_subscriptions").upsert({
-      email,
-      plan,
-      status: "active",
-    });
   }
 
   return NextResponse.json({ received: true });
