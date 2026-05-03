@@ -32,7 +32,8 @@ export async function POST(req: NextRequest) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const email = session.customer_details?.email || session.customer_email;
+    const email =
+      session.customer_details?.email || session.customer_email;
 
     if (email) {
       await supabase.from("user_subscriptions").upsert({
