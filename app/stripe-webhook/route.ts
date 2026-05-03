@@ -1,66 +1,58 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-export async function POST(req: Request) {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20",
+});
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function POST(req: NextRequest) {
+  const body = await req.text();
+  const sig = req.headers.get("stripe-signature")!;
+
+  let event;
+
   try {
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!stripeSecretKey || !webhookSecret || !supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: "Missing webhook environment variables." },
-        { status: 500 }
-      );
-    }
-
-    const stripe = new Stripe(stripeSecretKey);
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const body = await req.text();
-    const signature = req.headers.get("stripe-signature");
-
-    if (!signature) {
-      return NextResponse.json(
-        { error: "Missing Stripe signature." },
-        { status: 400 }
-      );
-    }
-
-    const event = stripe.webhooks.constructEvent(
+    event = stripe.webhooks.constructEvent(
       body,
-      signature,
-      webhookSecret
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET!
     );
+  } catch (err) {
+    return new NextResponse("Webhook Error", { status: 400 });
+  }
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as any;
 
-      const email = session.customer_details?.email || "";
-      const customerId =
-        typeof session.customer === "string" ? session.customer : "";
-      const subscriptionId =
-        typeof session.subscription === "string" ? session.subscription : "";
+    const email = session.customer_details?.email;
 
-      if (email) {
-        await supabase.from("user_subscriptions").upsert({
-          email: email,
-          plan: "paid",
-          status: "active",
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          updated_at: new Date().toISOString(),
-        });
-      }
+    if (!email) {
+      return NextResponse.json({ error: "No email found" });
     }
 
-    return NextResponse.json({ received: true });
-  } catch {
-    return NextResponse.json(
-      { error: "Webhook failed." },
-      { status: 500 }
-    );
+    // Determine plan from price ID
+    let plan = "standard";
+
+    if (session.line_items?.data?.[0]?.price?.id === process.env.STRIPE_PRO_PRICE_ID) {
+      plan = "pro";
+    }
+
+    if (session.line_items?.data?.[0]?.price?.id === process.env.STRIPE_ELITE_PRICE_ID) {
+      plan = "elite";
+    }
+
+    await supabase.from("user_subscriptions").upsert({
+      email,
+      plan,
+      status: "active",
+    });
   }
+
+  return NextResponse.json({ received: true });
 }

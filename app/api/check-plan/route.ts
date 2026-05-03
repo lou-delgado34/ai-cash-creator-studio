@@ -2,25 +2,39 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
-  const { email } = await req.json();
+  try {
+    const { email } = await req.json();
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-  );
+    if (!email) {
+      return NextResponse.json({ error: "Missing email" }, { status: 400 });
+    }
 
-  const { data } = await supabase
-    .from("user_subscriptions")
-    .select("plan,status")
-    .eq("email", email)
-    .single();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-  if (!data || data.status !== "active") {
-    return NextResponse.json({ plan: "free", active: false });
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("email", email)
+      .eq("status", "active")
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({
+        active: false,
+        error: "No active plan found",
+      });
+    }
+
+    return NextResponse.json({
+      active: true,
+      plan: data.plan,
+    });
+  } catch (err) {
+    return NextResponse.json({
+      error: "Server error",
+    });
   }
-
-  return NextResponse.json({
-    plan: data.plan,
-    active: true,
-  });
 }
