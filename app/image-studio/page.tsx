@@ -1,4 +1,44 @@
+"use client";
+
+import { useState } from "react";
+
+const USER_EMAIL = "lou.delgado.pfs@gmail.com";
+
 export default function ImageStudio() {
+  const [prompt, setPrompt] = useState("");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function generateImage() {
+    setLoading(true);
+    setResult("");
+
+    const res = await fetch("/api/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await res.json();
+    const imageUrl = data.image || data.url || "";
+
+    setResult(imageUrl || "Image generated, but no image URL returned.");
+
+    if (imageUrl) {
+      await fetch("/api/save-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: USER_EMAIL,
+          prompt,
+          image_url: imageUrl,
+        }),
+      });
+    }
+
+    setLoading(false);
+  }
+
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <section className="mx-auto max-w-5xl">
@@ -6,26 +46,30 @@ export default function ImageStudio() {
           Image Studio
         </p>
 
-        <h1 className="mt-3 text-4xl font-bold">
-          Create AI Images
-        </h1>
-
-        <p className="mt-4 max-w-2xl text-zinc-400">
-          Your paid plan is active. Use this studio to create AI photos,
-          product visuals, social posts, and creator content.
-        </p>
+        <h1 className="mt-3 text-4xl font-bold">Create AI Images</h1>
 
         <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-900 p-6">
-          <h2 className="text-2xl font-bold">AI Image Generator</h2>
-
           <textarea
-            className="mt-5 min-h-40 w-full rounded-2xl border border-white/10 bg-black p-4 text-white outline-none"
-            placeholder="Describe the image you want to create..."
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="min-h-40 w-full rounded-2xl border border-white/10 bg-black p-4 text-white outline-none"
+            placeholder="Describe your image..."
           />
 
-          <button className="mt-5 rounded-2xl bg-blue-600 px-6 py-4 font-bold hover:bg-blue-500">
-            Generate Image
+          <button
+            onClick={generateImage}
+            disabled={loading || !prompt.trim()}
+            className="mt-5 rounded-2xl bg-blue-600 px-6 py-4 font-bold hover:bg-blue-500 disabled:opacity-50"
+          >
+            {loading ? "Generating..." : "Generate Image"}
           </button>
+
+          {result && (
+            <div className="mt-6 rounded-2xl border border-white/10 bg-black p-4">
+              <p className="text-sm text-zinc-400">Saved Result:</p>
+              <p className="mt-2 break-all">{result}</p>
+            </div>
+          )}
         </div>
       </section>
     </main>
