@@ -1,79 +1,33 @@
-"use client";
-
-import { useState } from "react";
-
 export default function ImageStudio() {
-  const [email, setEmail] = useState("");
-  const [allowed, setAllowed] = useState(false);
-  const [message, setMessage] = useState("");
+  return (
+    <main className="min-h-screen bg-black px-6 py-10 text-white">
+      <section className="mx-auto max-w-5xl">
+        <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
+          Image Studio
+        </p>
 
-  async function checkAccess() {
-    setMessage("Checking...");
+        <h1 className="mt-3 text-4xl font-bold">
+          Create AI Images
+        </h1>
 
-    try {
-      const res = await fetch("/api/check-plan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+        <p className="mt-4 max-w-2xl text-zinc-400">
+          Your paid plan is active. Use this studio to create AI photos,
+          product visuals, social posts, and creator content.
+        </p>
 
-      const data = await res.json();
+        <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-900 p-6">
+          <h2 className="text-2xl font-bold">AI Image Generator</h2>
 
-      if (data.active) {
-        setAllowed(true);
-        setMessage("Access approved.");
-        localStorage.setItem("user_email", email);
-        localStorage.setItem("user_plan", data.plan);
-        return;
-      }
-
-      setMessage(data.error || "No active paid plan found.");
-    } catch {
-      setMessage("Check failed. The API route may be missing or broken.");
-    }
-  }
-
-  if (!allowed) {
-    return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-        <div className="max-w-md w-full rounded-3xl bg-zinc-900 p-8 border border-white/10">
-          <h1 className="text-3xl font-bold">Verify Access</h1>
-          <p className="mt-3 text-zinc-400">
-            Enter the email used at Stripe checkout.
-          </p>
-
-          <input
-            className="mt-6 w-full rounded-xl bg-black p-4 text-white"
-            placeholder="your@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+          <textarea
+            className="mt-5 min-h-40 w-full rounded-2xl border border-white/10 bg-black p-4 text-white outline-none"
+            placeholder="Describe the image you want to create..."
           />
 
-          <button
-            onClick={checkAccess}
-            className="mt-4 w-full rounded-xl bg-blue-600 p-4 font-bold"
-          >
-            Check Access
+          <button className="mt-5 rounded-2xl bg-blue-600 px-6 py-4 font-bold hover:bg-blue-500">
+            Generate Image
           </button>
-
-          {message && <p className="mt-4 text-yellow-400">{message}</p>}
-
-          <a href="/pricing" className="mt-5 block text-center text-blue-400">
-            Upgrade Now
-          </a>
         </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="min-h-screen bg-black text-white p-10">
-      <h1 className="text-4xl font-bold">Image Studio Unlocked</h1>
-      <p className="mt-4 text-zinc-400">
-        Your paid plan was verified from Supabase.
-      </p>
+      </section>
     </main>
   );
 }
