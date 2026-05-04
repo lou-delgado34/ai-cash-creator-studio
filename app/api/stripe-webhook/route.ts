@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
 
   if (!sig) {
-    return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
+    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
   let event: Stripe.Event;
@@ -26,26 +26,26 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch {
-    return NextResponse.json({ error: "Webhook signature failed" }, { status: 400 });
+    return NextResponse.json({ error: "Bad signature" }, { status: 400 });
   }
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const email =
-      session.customer_details?.email || session.customer_email;
+    const email = session.customer_details?.email || session.customer_email;
 
-    if (email) {
-      await supabase.from("user_subscriptions").upsert({
-        email,
-        plan: "elite",
-        status: "active",
-        stripe_customer_id:
-          typeof session.customer === "string" ? session.customer : null,
-        stripe_subscription_id:
-          typeof session.subscription === "string" ? session.subscription : null,
-        updated_at: new Date().toISOString(),
-      });
+    if (!email) {
+      return NextResponse.json({ error: "No email found" }, { status: 400 });
+    }
+
+    const { error } = await supabase.from("user_subscriptions").upsert({
+      email,
+      plan: "elite",
+      status: "active",
+    });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
 
