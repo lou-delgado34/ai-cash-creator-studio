@@ -20,7 +20,7 @@ export default function ImageStudio() {
     });
 
     const data = await res.json();
-    const imageUrl = data.image || data.url || "";
+    const imageUrl = data.image || data.url || data.imageUrl || "";
 
     setResult(imageUrl || "Image generated, but no image URL returned.");
 
@@ -46,7 +46,16 @@ export default function ImageStudio() {
           Image Studio
         </p>
 
-        <h1 className="mt-3 text-4xl font-bold">Create AI Images</h1>
+        <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <h1 className="text-4xl font-bold">Create AI Images</h1>
+
+          <a
+            href="/image-history"
+            className="rounded-xl bg-zinc-800 px-4 py-3 text-center text-sm font-bold hover:bg-zinc-700"
+          >
+            View Image History
+          </a>
+        </div>
 
         <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-900 p-6">
           <textarea
@@ -67,7 +76,16 @@ export default function ImageStudio() {
           {result && (
             <div className="mt-6 rounded-2xl border border-white/10 bg-black p-4">
               <p className="text-sm text-zinc-400">Saved Result:</p>
-              <p className="mt-2 break-all">{result}</p>
+
+              {result.startsWith("data:image") || result.startsWith("http") ? (
+                <img
+                  src={result}
+                  alt="Generated AI image"
+                  className="mt-4 max-w-full rounded-2xl"
+                />
+              ) : (
+                <p className="mt-2 break-all">{result}</p>
+              )}
             </div>
           )}
         </div>
