@@ -51,6 +51,25 @@ export default function AvatarBuilderPage() {
     }
   }
 
+  async function deleteAvatar(id: string) {
+    setMessage("Deleting...");
+
+    const res = await fetch("/api/delete-avatar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      setMessage("Avatar deleted.");
+      loadAvatars();
+    } else {
+      setMessage(data.error || "Delete failed.");
+    }
+  }
+
   useEffect(() => {
     loadAvatars();
   }, []);
@@ -103,10 +122,19 @@ export default function AvatarBuilderPage() {
                 alt={avatar.avatar_name}
                 className="rounded-2xl"
               />
+
               <h3 className="mt-3 text-xl font-bold">{avatar.avatar_name}</h3>
+
               <p className="mt-2 text-sm text-zinc-400">
                 {avatar.character_notes}
               </p>
+
+              <button
+                onClick={() => deleteAvatar(avatar.id)}
+                className="mt-4 w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-bold hover:bg-red-500"
+              >
+                Delete Avatar
+              </button>
             </div>
           ))}
         </div>
