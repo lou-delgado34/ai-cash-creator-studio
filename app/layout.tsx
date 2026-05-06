@@ -1,19 +1,9 @@
 import "./globals.css";
-import Link from "next/link";
 
-const mainLinks = [
-  { href: "/", label: "Home" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/ai-models", label: "AI Models" },
-  { href: "/prompt-studio", label: "Content" },
-  { href: "/image-studio", label: "Images" },
-  { href: "/voice-studio", label: "Voice" },
-  { href: "/video-generator", label: "Video" },
-  { href: "/history", label: "History" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/admin", label: "Admin" },
-  { href: "/login", label: "Login" },
-];
+export const metadata = {
+  title: "AI Cash Creator Studio",
+  description: "AI Creator Platform",
+};
 
 export default function RootLayout({
   children,
@@ -22,38 +12,45 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, background: "#000", color: "#fff" }}>
-        <nav
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 50,
-            background: "#050505",
-            borderBottom: "1px solid #222",
-            padding: "16px 24px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-          }}
-        >
-          {mainLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              style={{
-                color: "#fff",
-                background: "#111827",
-                padding: "10px 16px",
-                borderRadius: "999px",
-                textDecoration: "none",
-                fontWeight: 700,
-                border: "1px solid #333",
-              }}
+      <body className="bg-black text-white">
+        <header className="border-b border-white/10 bg-zinc-950">
+          <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-6 py-4">
+            <a
+              href="/"
+              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
             >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+              Home
+            </a>
+
+            <a
+              href="/pricing"
+              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
+            >
+              Pricing
+            </a>
+
+            <a
+              href="/image-studio"
+              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
+            >
+              Image Studio
+            </a>
+
+            <a
+              href="/avatar-builder"
+              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
+            >
+              Avatar Builder
+            </a>
+
+            <a
+              href="/dashboard"
+              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
+            >
+              Dashboard
+            </a>
+          </nav>
+        </header>
 
         {children}
       </body>
