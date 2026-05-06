@@ -10,45 +10,29 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const links = [
+    ["Home", "/"],
+    ["Pricing", "/pricing"],
+    ["AI Models", "/ai-models"],
+    ["Image Studio", "/image-studio"],
+    ["Avatar Builder", "/avatar-builder"],
+    ["Dashboard", "/dashboard"],
+  ];
+
   return (
     <html lang="en">
-      <body className="bg-black text-white">
-        <header className="border-b border-white/10 bg-zinc-950">
+      <body className="min-h-screen bg-black text-white">
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-black/95">
           <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-6 py-4">
-            <a
-              href="/"
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
-            >
-              Home
-            </a>
-
-            <a
-              href="/pricing"
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
-            >
-              Pricing
-            </a>
-
-            <a
-              href="/image-studio"
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
-            >
-              Image Studio
-            </a>
-
-            <a
-              href="/avatar-builder"
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
-            >
-              Avatar Builder
-            </a>
-
-            <a
-              href="/dashboard"
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold hover:bg-zinc-800"
-            >
-              Dashboard
-            </a>
+            {links.map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-2xl border border-white/10 bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow hover:bg-blue-600"
+              >
+                {label}
+              </a>
+            ))}
           </nav>
         </header>
 
