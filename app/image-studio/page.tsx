@@ -28,11 +28,7 @@ export default function ImageStudio() {
       await fetch("/api/save-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: USER_EMAIL,
-          prompt,
-          image_url: imageUrl,
-        }),
+        body: JSON.stringify({ email: USER_EMAIL, prompt, image_url: imageUrl }),
       });
     }
 
@@ -49,12 +45,21 @@ export default function ImageStudio() {
         <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <h1 className="text-4xl font-bold">Create AI Images</h1>
 
-          <a
-            href="/image-history"
-            className="rounded-xl bg-zinc-800 px-4 py-3 text-center text-sm font-bold hover:bg-zinc-700"
-          >
-            View Image History
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="/image-history"
+              className="rounded-xl bg-zinc-800 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-700"
+            >
+              View Image History
+            </a>
+
+            <a
+              href="/avatar-builder"
+              className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500"
+            >
+              Build Avatar
+            </a>
+          </div>
         </div>
 
         <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-900 p-6">
@@ -68,7 +73,7 @@ export default function ImageStudio() {
           <button
             onClick={generateImage}
             disabled={loading || !prompt.trim()}
-            className="mt-5 rounded-2xl bg-blue-600 px-6 py-4 font-bold hover:bg-blue-500 disabled:opacity-50"
+            className="mt-5 rounded-2xl bg-blue-600 px-6 py-4 font-bold text-white hover:bg-blue-500 disabled:opacity-50"
           >
             {loading ? "Generating..." : "Generate Image"}
           </button>
@@ -78,11 +83,7 @@ export default function ImageStudio() {
               <p className="text-sm text-zinc-400">Saved Result:</p>
 
               {result.startsWith("data:image") || result.startsWith("http") ? (
-                <img
-                  src={result}
-                  alt="Generated AI image"
-                  className="mt-4 max-w-full rounded-2xl"
-                />
+                <img src={result} alt="Generated AI image" className="mt-4 max-w-full rounded-2xl" />
               ) : (
                 <p className="mt-2 break-all">{result}</p>
               )}
