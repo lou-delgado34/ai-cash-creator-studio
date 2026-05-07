@@ -12,13 +12,14 @@ export default function RootLayout({
 }) {
   const links = [
     ["Home", "/"],
-    ["Pricing", "/pricing"],
+    ["Dashboard", "/dashboard"],
+    ["Social Planner", "/social-planner"],
     ["AI Models", "/ai-models"],
     ["Image Studio", "/image-studio"],
     ["Avatar Builder", "/avatar-builder"],
     ["Talking Avatar", "/talking-avatar"],
     ["Video History", "/talking-history"],
-    ["Dashboard", "/dashboard"],
+    ["Pricing", "/pricing"],
   ];
 
   return (
