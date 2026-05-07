@@ -1,38 +1,37 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { prompt } = body;
+  const { prompt } = await req.json();
 
-    if (!prompt) {
-      return Response.json({ error: "Missing image prompt." });
-    }
+  const apiKey = process.env.OPENAI_API_KEY;
 
-    const image = await openai.images.generate({
+  if (!apiKey) {
+    return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 500 });
+  }
+
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
       model: "gpt-image-1",
       prompt,
-      size: "1024x1536",
-      quality: "low",
-      n: 1,
-    });
+      size: "1024x1024",
+    }),
+  });
 
-    const base64Image = image.data?.[0]?.b64_json;
+  const data = await response.json();
 
-    if (!base64Image) {
-      return Response.json({ error: "No image returned." });
-    }
-
-    return Response.json({
-      imageUrl: `data:image/png;base64,${base64Image}`,
-    });
-  } catch (error: any) {
-    return Response.json({
-      error: error.message || "Image generation failed.",
-    });
+  if (!response.ok) {
+    return NextResponse.json(
+      { error: data.error?.message || "Image generation failed" },
+      { status: 500 }
+    );
   }
+
+  return NextResponse.json({
+    image: data.data?.[0]?.url || data.data?.[0]?.b64_json || "",
+  });
 }
