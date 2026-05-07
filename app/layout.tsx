@@ -16,6 +16,7 @@ export default function RootLayout({
     ["AI Models", "/ai-models"],
     ["Image Studio", "/image-studio"],
     ["Avatar Builder", "/avatar-builder"],
+    ["Talking Avatar", "/talking-avatar"],
     ["Dashboard", "/dashboard"],
   ];
 
