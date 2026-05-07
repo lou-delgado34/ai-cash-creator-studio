@@ -17,6 +17,7 @@ export default function RootLayout({
     ["Image Studio", "/image-studio"],
     ["Avatar Builder", "/avatar-builder"],
     ["Talking Avatar", "/talking-avatar"],
+    ["Video History", "/talking-history"],
     ["Dashboard", "/dashboard"],
   ];
 
