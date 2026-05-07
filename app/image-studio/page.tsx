@@ -1,76 +1,73 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const USER_EMAIL = "lou.delgado.pfs@gmail.com";
 
-type Avatar = {
-  id: string;
-  avatar_name: string;
-  image_url: string;
-  character_notes: string;
-};
-
 export default function ImageStudio() {
   const [prompt, setPrompt] = useState("");
-  const [result, setResult] = useState("");
+  const [image, setImage] = useState("");
+  const [avatarName, setAvatarName] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [avatars, setAvatars] = useState<Avatar[]>([]);
-  const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
-
-  async function loadAvatars() {
-    const res = await fetch("/api/list-avatars");
-    const data = await res.json();
-    setAvatars(data.avatars || []);
-  }
-
-  useEffect(() => {
-    loadAvatars();
-  }, []);
 
   async function generateImage() {
     setLoading(true);
-    setResult("");
-
-    let finalPrompt = prompt;
-
-    if (selectedAvatar) {
-      finalPrompt = `
-      ${prompt}
-      Character: ${selectedAvatar.avatar_name}
-      Details: ${selectedAvatar.character_notes}
-      Use this face reference: ${selectedAvatar.image_url}
-      `;
-    }
+    setMessage("");
+    setImage("");
 
     const res = await fetch("/api/generate-image", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt: finalPrompt }),
+      body: JSON.stringify({ prompt }),
     });
 
     const data = await res.json();
-    const imageUrl = data.image || data.url || "";
 
-    setResult(imageUrl || "No image returned");
-
-    if (imageUrl) {
-      await fetch("/api/save-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: USER_EMAIL,
-          prompt: finalPrompt,
-          image_url: imageUrl,
-        }),
-      });
+    if (data.error) {
+      setMessage(data.error);
+      setLoading(false);
+      return;
     }
 
+    setImage(data.image);
+    setMessage("Image created. Now name it and save as avatar.");
     setLoading(false);
+  }
+
+  async function saveAsAvatar() {
+    if (!image) {
+      setMessage("Generate an image first.");
+      return;
+    }
+
+    if (!avatarName.trim()) {
+      setMessage("Give your avatar a name.");
+      return;
+    }
+
+    const res = await fetch("/api/save-generated-avatar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: USER_EMAIL,
+        avatar_name: avatarName,
+        image_url: image,
+        character_notes: prompt,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      setMessage("Avatar saved. Go to Talking Avatar.");
+    } else {
+      setMessage(data.error || "Save failed.");
+    }
   }
 
   return (
@@ -78,52 +75,40 @@ export default function ImageStudio() {
       <section className="mx-auto max-w-6xl">
         <h1 className="text-4xl font-bold">Image Studio</h1>
 
-        {/* Avatar Selector */}
-        <div className="mt-6">
-          <h2 className="text-xl font-bold">Select Avatar</h2>
-
-          <div className="mt-4 flex gap-4 overflow-x-auto">
-            {avatars.map((avatar) => (
-              <div
-                key={avatar.id}
-                onClick={() => setSelectedAvatar(avatar)}
-                className={`cursor-pointer rounded-2xl border p-2 ${
-                  selectedAvatar?.id === avatar.id
-                    ? "border-blue-500"
-                    : "border-white/10"
-                }`}
-              >
-                <img
-                  src={avatar.image_url}
-                  className="h-20 w-20 rounded-xl object-cover"
-                />
-                <p className="mt-2 text-sm text-center">
-                  {avatar.avatar_name}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Prompt */}
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="mt-6 w-full rounded-2xl bg-zinc-900 p-4 text-white"
-          placeholder="Describe your image..."
+          className="mt-8 min-h-32 w-full rounded-2xl bg-zinc-900 p-4 text-white"
+          placeholder="Describe the avatar image..."
         />
 
         <button
           onClick={generateImage}
-          disabled={!prompt || loading}
-          className="mt-4 rounded-xl bg-blue-600 px-6 py-3 font-bold hover:bg-blue-500"
+          disabled={loading || !prompt.trim()}
+          className="mt-5 rounded-xl bg-blue-600 px-6 py-3 font-bold hover:bg-blue-500 disabled:opacity-50"
         >
           {loading ? "Generating..." : "Generate Image"}
         </button>
 
-        {result && (
-          <div className="mt-6">
-            <img src={result} className="rounded-2xl" />
+        {message && <p className="mt-4 text-yellow-400">{message}</p>}
+
+        {image && (
+          <div className="mt-8 rounded-3xl bg-zinc-900 p-5">
+            <img src={image} alt="Generated avatar" className="max-w-md rounded-2xl" />
+
+            <input
+              value={avatarName}
+              onChange={(e) => setAvatarName(e.target.value)}
+              className="mt-5 w-full max-w-md rounded-xl bg-black p-4 text-white"
+              placeholder="Avatar name"
+            />
+
+            <button
+              onClick={saveAsAvatar}
+              className="mt-4 rounded-xl bg-green-600 px-6 py-3 font-bold hover:bg-green-500"
+            >
+              Save as Avatar
+            </button>
           </div>
         )}
       </section>
