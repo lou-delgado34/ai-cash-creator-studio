@@ -38,9 +38,10 @@ function cleanForVideo(text: string) {
     .replace(/GUION:/gi, "")
     .replace(/GUIÓN:/gi, "")
     .replace(/LLAMADO A LA ACCIÓN:/gi, "")
+    .replace(/["“”]/g, "")
     .trim();
 
-  return clean;
+  return clean.slice(0, 450);
 }
 
 export default function ContentLibraryPage() {
@@ -90,7 +91,7 @@ export default function ContentLibraryPage() {
     }
 
     setLoadingId(item.id);
-    setMessage("Creating video from selected script...");
+    setMessage("Creating video...");
 
     const res = await fetch("/api/create-talk", {
       method: "POST",
@@ -106,7 +107,7 @@ export default function ContentLibraryPage() {
     const data = await res.json();
 
     if (!data.id) {
-      setMessage(data.error || "D-ID failed.");
+      setMessage(JSON.stringify(data, null, 2));
       setLoadingId("");
       return;
     }
@@ -151,7 +152,11 @@ export default function ContentLibraryPage() {
           </div>
         </div>
 
-        {message && <p className="mt-5 text-yellow-400">{message}</p>}
+        {message && (
+          <pre className="mt-5 whitespace-pre-wrap rounded-2xl bg-red-950/40 p-4 text-yellow-300">
+            {message}
+          </pre>
+        )}
 
         <div className="mt-8 space-y-6">
           {items.map((item) => {
@@ -191,7 +196,7 @@ export default function ContentLibraryPage() {
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     onClick={() => copyScript(selected)}
-                    className="rounded-xl bg-zinc-700 px-4 py-2 font-bold hover:bg-zinc-600"
+                    className="rounded-xl bg-zinc-700 px-4 py-2 font-bold"
                   >
                     Copy Selected Script
                   </button>
@@ -199,22 +204,16 @@ export default function ContentLibraryPage() {
                   <button
                     onClick={() => createVideo(item)}
                     disabled={loadingId === item.id}
-                    className="rounded-xl bg-blue-600 px-4 py-2 font-bold hover:bg-blue-500 disabled:opacity-50"
+                    className="rounded-xl bg-blue-600 px-4 py-2 font-bold disabled:opacity-50"
                   >
                     {loadingId === item.id ? "Creating..." : "Create Video from Selected Script"}
                   </button>
 
-                  <a
-                    href="/talking-avatar"
-                    className="rounded-xl bg-green-600 px-4 py-2 font-bold hover:bg-green-500"
-                  >
+                  <a href="/talking-avatar" className="rounded-xl bg-green-600 px-4 py-2 font-bold">
                     Open Talking Avatar
                   </a>
 
-                  <a
-                    href="/talking-history"
-                    className="rounded-xl bg-purple-600 px-4 py-2 font-bold hover:bg-purple-500"
-                  >
+                  <a href="/talking-history" className="rounded-xl bg-purple-600 px-4 py-2 font-bold">
                     Video History
                   </a>
                 </div>
@@ -222,12 +221,6 @@ export default function ContentLibraryPage() {
             );
           })}
         </div>
-
-        {items.length === 0 && (
-          <p className="mt-8 rounded-2xl bg-zinc-900 p-6 text-zinc-400">
-            No saved content yet.
-          </p>
-        )}
       </section>
     </main>
   );
