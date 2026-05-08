@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 
+const USER_EMAIL = "lou.delgado.pfs@gmail.com";
+
 export default function SocialPlannerPage() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   const [platform, setPlatform] = useState("Instagram Reels");
   const [language, setLanguage] = useState("English");
@@ -14,16 +17,11 @@ export default function SocialPlannerPage() {
 
   async function generate() {
     setLoading(true);
+    setMessage("");
 
     const res = await fetch("/api/generate-content", {
       method: "POST",
-      body: JSON.stringify({
-        platform,
-        language,
-        goal,
-        audience,
-        topic,
-      }),
+      body: JSON.stringify({ platform, language, goal, audience, topic }),
     });
 
     const data = await res.json();
@@ -31,59 +29,51 @@ export default function SocialPlannerPage() {
     setLoading(false);
   }
 
+  async function saveDraft() {
+    if (!result) {
+      setMessage("Generate content first.");
+      return;
+    }
+
+    const res = await fetch("/api/save-social-content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: USER_EMAIL,
+        content_type: goal,
+        platform,
+        language,
+        hook: "Generated Content",
+        caption: result,
+        script: result,
+        call_to_action: "Message me for details.",
+        status: "draft",
+      }),
+    });
+
+    const data = await res.json();
+    setMessage(data.success ? "Saved to Content Library." : data.error || "Save failed.");
+  }
+
   function copyContent() {
     navigator.clipboard.writeText(result);
+    setMessage("Copied.");
   }
 
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <section className="mx-auto max-w-6xl">
-        <h1 className="text-4xl font-bold">
-          Social Planner + Recruiting Script Generator
-        </h1>
+        <h1 className="text-4xl font-bold">Social Planner + Recruiting Script Generator</h1>
 
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           <div className="space-y-4 rounded-3xl bg-zinc-900 p-6">
-            <input
-              className="w-full rounded-xl bg-black p-4"
-              value={platform}
-              onChange={(e) => setPlatform(e.target.value)}
-              placeholder="Platform"
-            />
+            <input className="w-full rounded-xl bg-black p-4 text-white" value={platform} onChange={(e) => setPlatform(e.target.value)} />
+            <input className="w-full rounded-xl bg-black p-4 text-white" value={language} onChange={(e) => setLanguage(e.target.value)} />
+            <input className="w-full rounded-xl bg-black p-4 text-white" value={goal} onChange={(e) => setGoal(e.target.value)} />
+            <input className="w-full rounded-xl bg-black p-4 text-white" value={audience} onChange={(e) => setAudience(e.target.value)} />
+            <textarea className="min-h-32 w-full rounded-xl bg-black p-4 text-white" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic" />
 
-            <input
-              className="w-full rounded-xl bg-black p-4"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              placeholder="Language"
-            />
-
-            <input
-              className="w-full rounded-xl bg-black p-4"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="Goal"
-            />
-
-            <input
-              className="w-full rounded-xl bg-black p-4"
-              value={audience}
-              onChange={(e) => setAudience(e.target.value)}
-              placeholder="Audience"
-            />
-
-            <textarea
-              className="min-h-32 w-full rounded-xl bg-black p-4"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="Topic"
-            />
-
-            <button
-              onClick={generate}
-              disabled={loading}
-              className="rounded-xl bg-blue-600 px-6 py-3 font-bold hover:bg-blue-500 disabled:opacity-50"
-            >
+            <button onClick={generate} disabled={loading} className="rounded-xl bg-blue-600 px-6 py-3 font-bold disabled:opacity-50">
               {loading ? "Generating..." : "Generate Content"}
             </button>
           </div>
@@ -97,21 +87,25 @@ export default function SocialPlannerPage() {
 
             {result && (
               <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  onClick={copyContent}
-                  className="rounded-xl bg-zinc-700 px-5 py-3 font-bold hover:bg-zinc-600"
-                >
+                <button onClick={copyContent} className="rounded-xl bg-zinc-700 px-5 py-3 font-bold">
                   Copy
                 </button>
 
-                <a
-                  href="/talking-avatar"
-                  className="rounded-xl bg-green-600 px-5 py-3 font-bold hover:bg-green-500"
-                >
-                  Open Talking Avatar
+                <button onClick={saveDraft} className="rounded-xl bg-green-600 px-5 py-3 font-bold">
+                  Save Draft
+                </button>
+
+                <a href="/content-library" className="rounded-xl bg-purple-600 px-5 py-3 font-bold">
+                  Content Library
+                </a>
+
+                <a href="/talking-avatar" className="rounded-xl bg-blue-600 px-5 py-3 font-bold">
+                  Talking Avatar
                 </a>
               </div>
             )}
+
+            {message && <p className="mt-5 text-yellow-400">{message}</p>}
           </div>
         </div>
       </section>
