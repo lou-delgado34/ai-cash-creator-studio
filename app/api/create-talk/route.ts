@@ -1,29 +1,14 @@
 import { NextResponse } from "next/server";
 
-function isSpanish(text: string) {
-  const lower = text.toLowerCase();
-  return [
-    "hola",
-    "amigos",
-    "dinero",
-    "ingresos",
-    "familia",
-    "puedes",
-    "quieres",
-    "oportunidad",
-    "negocio",
-    "financiera",
-    "educación",
-    "protección",
-    "mensaje",
-    "equipo",
-    "ganar",
-    "hogar",
-  ].some((word) => lower.includes(word));
-}
-
 function cleanScript(input: string) {
   let text = input || "";
+
+  const scriptMatch =
+    text.match(/SCRIPT:\s*([\s\S]*?)(CTA:|CALL TO ACTION:|CAPTION:|HOOK:|$)/i) ||
+    text.match(/GUION:\s*([\s\S]*?)(CTA:|LLAMADO A LA ACCIÓN:|CAPTION:|HOOK:|$)/i) ||
+    text.match(/GUIÓN:\s*([\s\S]*?)(CTA:|LLAMADO A LA ACCIÓN:|CAPTION:|HOOK:|$)/i);
+
+  if (scriptMatch?.[1]) text = scriptMatch[1];
 
   text = text
     .replace(/\*\*/g, "")
@@ -36,139 +21,69 @@ function cleanScript(input: string) {
     .replace(/GUION:/gi, "")
     .replace(/GUIÓN:/gi, "")
     .replace(/LLAMADO A LA ACCIÓN:/gi, "")
+    .replace(/#\w+/g, "")
     .replace(/Post \d+/gi, "")
     .replace(/Publicación \d+/gi, "")
     .replace(/["“”]/g, "")
     .trim();
 
-  if (text.length > 500) {
-    text = text.slice(0, 500);
-  }
-
-  return text;
-}
-
-async function createDidTalk({
-  didKey,
-  imageUrl,
-  script,
-  voiceId,
-}: {
-  didKey: string;
-  imageUrl: string;
-  script: string;
-  voiceId: string;
-}) {
-  const response = await fetch("https://api.d-id.com/talks", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${didKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      source_url: imageUrl,
-      script: {
-        type: "text",
-        input: script,
-        provider: {
-          type: "microsoft",
-          voice_id: voiceId,
-        },
-      },
-      config: {
-        fluent: true,
-        pad_audio: 0.5,
-      },
-    }),
-  });
-
-  const data = await response.json();
-
-  return {
-    ok: response.ok,
-    data,
-    voiceId,
-  };
+  return text.slice(0, 500);
 }
 
 export async function POST(req: Request) {
   try {
-    const { image_url, script } = await req.json();
+    const { image_url, script, voice_id } = await req.json();
 
     const didKey = process.env.DID_API_KEY;
 
     if (!didKey) {
-      return NextResponse.json(
-        { error: "Missing DID_API_KEY." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Missing DID_API_KEY." }, { status: 500 });
     }
 
     const finalScript = cleanScript(script);
 
     if (!image_url) {
-      return NextResponse.json(
-        { error: "Missing avatar image." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing avatar image." }, { status: 400 });
     }
 
     if (!finalScript) {
+      return NextResponse.json({ error: "No clean script found." }, { status: 400 });
+    }
+
+    const response = await fetch("https://api.d-id.com/talks", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${didKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        source_url: image_url,
+        script: {
+          type: "text",
+          input: finalScript,
+          provider: {
+            type: "microsoft",
+            voice_id: voice_id || "en-US-GuyNeural",
+          },
+        },
+        config: {
+          fluent: true,
+          pad_audio: 0.5,
+        },
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
       return NextResponse.json(
-        { error: "No clean script found." },
-        { status: 400 }
+        { error: data?.description || data?.message || data?.error || "D-ID failed.", details: data },
+        { status: 500 }
       );
     }
 
-    const spanish = isSpanish(finalScript);
-
-    const voiceList = spanish
-      ? [
-          "es-MX-JorgeNeural",
-          "es-US-AlonsoNeural",
-          "es-ES-AlvaroNeural",
-          "es-MX-DaliaNeural",
-          "es-US-PalomaNeural",
-        ]
-      : ["en-US-GuyNeural", "en-US-JennyNeural"];
-
-    const errors: any[] = [];
-
-    for (const voiceId of voiceList) {
-      const attempt = await createDidTalk({
-        didKey,
-        imageUrl: image_url,
-        script: finalScript,
-        voiceId,
-      });
-
-      if (attempt.ok) {
-        return NextResponse.json({
-          ...attempt.data,
-          voice_used: voiceId,
-          script_used: finalScript,
-        });
-      }
-
-      errors.push({
-        voiceId,
-        error: attempt.data,
-      });
-    }
-
-    return NextResponse.json(
-      {
-        error: "D-ID failed with all voices.",
-        script_used: finalScript,
-        tried_voices: voiceList,
-        details: errors,
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ ...data, script_used: finalScript });
   } catch {
-    return NextResponse.json(
-      { error: "Create talk route crashed." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Create talk route crashed." }, { status: 500 });
   }
 }
