@@ -2,10 +2,52 @@
 
 import { useEffect, useState } from "react";
 
+function splitIntoPosts(text: string) {
+  if (!text) return [];
+
+  const parts = text
+    .split(/### Post \d+|## Post \d+|Post \d+|### Publicación \d+|Publicación \d+/i)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return [text];
+
+  return parts;
+}
+
+function cleanForVideo(text: string) {
+  let clean = text || "";
+
+  const scriptMatch =
+    clean.match(/SCRIPT:\s*([\s\S]*?)(CTA:|CALL TO ACTION:|CAPTION:|HOOK:|$)/i) ||
+    clean.match(/GUION:\s*([\s\S]*?)(CTA:|LLAMADO A LA ACCIÓN:|CAPTION:|HOOK:|$)/i) ||
+    clean.match(/GUIÓN:\s*([\s\S]*?)(CTA:|LLAMADO A LA ACCIÓN:|CAPTION:|HOOK:|$)/i);
+
+  if (scriptMatch?.[1]) {
+    clean = scriptMatch[1];
+  }
+
+  clean = clean
+    .replace(/\*\*/g, "")
+    .replace(/###/g, "")
+    .replace(/HOOK:/gi, "")
+    .replace(/CAPTION:/gi, "")
+    .replace(/SCRIPT:/gi, "")
+    .replace(/CTA:/gi, "")
+    .replace(/CALL TO ACTION:/gi, "")
+    .replace(/GUION:/gi, "")
+    .replace(/GUIÓN:/gi, "")
+    .replace(/LLAMADO A LA ACCIÓN:/gi, "")
+    .trim();
+
+  return clean;
+}
+
 export default function ContentLibraryPage() {
   const [items, setItems] = useState<any[]>([]);
   const [avatars, setAvatars] = useState<any[]>([]);
   const [selectedAvatar, setSelectedAvatar] = useState<any>(null);
+  const [selectedScripts, setSelectedScripts] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [loadingId, setLoadingId] = useState("");
 
@@ -26,9 +68,9 @@ export default function ContentLibraryPage() {
     loadAvatars();
   }, []);
 
-  function copyText(item: any) {
-    navigator.clipboard.writeText(item.script || item.caption || "");
-    setMessage("Copied.");
+  function copyScript(script: string) {
+    navigator.clipboard.writeText(cleanForVideo(script));
+    setMessage("Selected script copied.");
   }
 
   async function createVideo(item: any) {
@@ -37,15 +79,18 @@ export default function ContentLibraryPage() {
       return;
     }
 
-    const script = item.script || item.caption || "";
+    const selectedScript =
+      selectedScripts[item.id] || splitIntoPosts(item.script || item.caption || "")[0];
 
-    if (!script) {
-      setMessage("This content has no script.");
+    const finalScript = cleanForVideo(selectedScript);
+
+    if (!finalScript) {
+      setMessage("Select a script first.");
       return;
     }
 
     setLoadingId(item.id);
-    setMessage("Creating video...");
+    setMessage("Creating video from selected script...");
 
     const res = await fetch("/api/create-talk", {
       method: "POST",
@@ -54,27 +99,24 @@ export default function ContentLibraryPage() {
       },
       body: JSON.stringify({
         image_url: selectedAvatar.image_url,
-        script,
+        script: finalScript,
       }),
     });
 
     const data = await res.json();
 
     if (!data.id) {
-      setMessage(data.error || "Video creation failed.");
+      setMessage(data.error || "D-ID failed.");
       setLoadingId("");
       return;
     }
 
-    setMessage(
-      "Video started. Go to Talking Avatar or Video History after 30 seconds."
-    );
-
     localStorage.setItem("latest_talk_id", data.id);
-    localStorage.setItem("latest_talk_script", script);
+    localStorage.setItem("latest_talk_script", finalScript);
     localStorage.setItem("latest_avatar_name", selectedAvatar.avatar_name);
     localStorage.setItem("latest_avatar_image", selectedAvatar.image_url);
 
+    setMessage("Video started. Go to Talking Avatar and click Check Video after 30 seconds.");
     setLoadingId("");
   }
 
@@ -112,48 +154,73 @@ export default function ContentLibraryPage() {
         {message && <p className="mt-5 text-yellow-400">{message}</p>}
 
         <div className="mt-8 space-y-6">
-          {items.map((item) => (
-            <div key={item.id} className="rounded-3xl bg-zinc-900 p-6">
-              <p className="text-sm text-zinc-400">
-                {item.platform} · {item.language}
-              </p>
+          {items.map((item) => {
+            const posts = splitIntoPosts(item.script || item.caption || "");
+            const selected = selectedScripts[item.id] || posts[0] || "";
 
-              <p className="mt-4 whitespace-pre-wrap">
-                {item.script || item.caption}
-              </p>
+            return (
+              <div key={item.id} className="rounded-3xl bg-zinc-900 p-6">
+                <p className="text-sm text-zinc-400">
+                  {item.platform} · {item.language}
+                </p>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  onClick={() => copyText(item)}
-                  className="rounded-xl bg-zinc-700 px-4 py-2 font-bold hover:bg-zinc-600"
+                <h2 className="mt-4 text-xl font-bold">Choose which script to use</h2>
+
+                <select
+                  value={selected}
+                  onChange={(e) =>
+                    setSelectedScripts({
+                      ...selectedScripts,
+                      [item.id]: e.target.value,
+                    })
+                  }
+                  className="mt-4 w-full rounded-xl bg-black p-4 text-white"
                 >
-                  Copy
-                </button>
+                  {posts.map((post, index) => (
+                    <option key={index} value={post}>
+                      Script {index + 1}
+                    </option>
+                  ))}
+                </select>
 
-                <button
-                  onClick={() => createVideo(item)}
-                  disabled={loadingId === item.id}
-                  className="rounded-xl bg-blue-600 px-4 py-2 font-bold hover:bg-blue-500 disabled:opacity-50"
-                >
-                  {loadingId === item.id ? "Creating..." : "Create Video"}
-                </button>
+                <div className="mt-5 rounded-2xl bg-black p-5">
+                  <p className="text-sm text-blue-400">SELECTED SCRIPT PREVIEW</p>
+                  <p className="mt-3 whitespace-pre-wrap">{cleanForVideo(selected)}</p>
+                </div>
 
-                <a
-                  href="/talking-avatar"
-                  className="rounded-xl bg-green-600 px-4 py-2 font-bold hover:bg-green-500"
-                >
-                  Open Talking Avatar
-                </a>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => copyScript(selected)}
+                    className="rounded-xl bg-zinc-700 px-4 py-2 font-bold hover:bg-zinc-600"
+                  >
+                    Copy Selected Script
+                  </button>
 
-                <a
-                  href="/talking-history"
-                  className="rounded-xl bg-purple-600 px-4 py-2 font-bold hover:bg-purple-500"
-                >
-                  Video History
-                </a>
+                  <button
+                    onClick={() => createVideo(item)}
+                    disabled={loadingId === item.id}
+                    className="rounded-xl bg-blue-600 px-4 py-2 font-bold hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    {loadingId === item.id ? "Creating..." : "Create Video from Selected Script"}
+                  </button>
+
+                  <a
+                    href="/talking-avatar"
+                    className="rounded-xl bg-green-600 px-4 py-2 font-bold hover:bg-green-500"
+                  >
+                    Open Talking Avatar
+                  </a>
+
+                  <a
+                    href="/talking-history"
+                    className="rounded-xl bg-purple-600 px-4 py-2 font-bold hover:bg-purple-500"
+                  >
+                    Video History
+                  </a>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {items.length === 0 && (
