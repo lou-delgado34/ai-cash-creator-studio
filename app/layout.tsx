@@ -26,12 +26,12 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-black text-white">
         <header className="sticky top-0 z-50 border-b border-white/10 bg-black/95">
-          <nav className="mx-auto flex max-w-7xl flex-wrap gap-3 px-6 py-4">
+          <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-6 py-5">
             {links.map(([label, href]) => (
               <a
                 key={href}
                 href={href}
-                className="rounded-2xl border border-white/10 bg-zinc-900 px-5 py-3 text-sm font-bold hover:bg-blue-600"
+                className="rounded-2xl border border-white/20 bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-black/40 hover:bg-blue-600 hover:text-white"
               >
                 {label}
               </a>
