@@ -1,24 +1,64 @@
 import { NextResponse } from "next/server";
 
-function cleanScript(input: string) {
-  let script = input || "";
+function isSpanish(text: string) {
+  const spanishWords = [
+    "que",
+    "puedes",
+    "dinero",
+    "familia",
+    "protección",
+    "educación",
+    "financiera",
+    "oportunidad",
+    "ingresos",
+    "mensaje",
+    "aprende",
+    "hola",
+    "quieres",
+    "trabajo",
+    "negocio",
+  ];
 
-  script = script
-    .replace(/###/g, "")
+  const lower = text.toLowerCase();
+
+  return spanishWords.some((word) => lower.includes(word));
+}
+
+function extractScript(input: string) {
+  let text = input || "";
+
+  text = text
     .replace(/\*\*/g, "")
-    .replace(/HOOK:/gi, "")
-    .replace(/CAPTION:/gi, "")
-    .replace(/SCRIPT:/gi, "")
-    .replace(/CTA:/gi, "")
-    .replace(/Post 1/gi, "")
-    .replace(/Post 2[\s\S]*/gi, "")
+    .replace(/###/g, "")
+    .replace(/["“”]/g, "")
     .trim();
 
-  if (script.length > 900) {
-    script = script.slice(0, 900);
+  const scriptMatch =
+    text.match(/SCRIPT:\s*([\s\S]*?)(CTA:|CALL TO ACTION:|CAPTION:|HOOK:|$)/i) ||
+    text.match(/GUIÓN:\s*([\s\S]*?)(CTA:|LLAMADO A LA ACCIÓN:|CAPTION:|HOOK:|$)/i) ||
+    text.match(/GUION:\s*([\s\S]*?)(CTA:|LLAMADO A LA ACCIÓN:|CAPTION:|HOOK:|$)/i);
+
+  if (scriptMatch?.[1]) {
+    text = scriptMatch[1].trim();
   }
 
-  return script;
+  text = text
+    .replace(/HOOK:[\s\S]*?(CAPTION:|SCRIPT:|GUIÓN:|GUION:)/i, "")
+    .replace(/CAPTION:[\s\S]*?(SCRIPT:|GUIÓN:|GUION:)/i, "")
+    .replace(/CTA:[\s\S]*/i, "")
+    .replace(/CALL TO ACTION:[\s\S]*/i, "")
+    .replace(/LLAMADO A LA ACCIÓN:[\s\S]*/i, "")
+    .replace(/Post 1/gi, "")
+    .replace(/Post 2[\s\S]*/gi, "")
+    .replace(/Publicación 1/gi, "")
+    .replace(/Publicación 2[\s\S]*/gi, "")
+    .trim();
+
+  if (text.length > 700) {
+    text = text.slice(0, 700);
+  }
+
+  return text;
 }
 
 export async function POST(req: Request) {
@@ -34,7 +74,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const finalScript = cleanScript(script);
+    const finalScript = extractScript(script);
+    const spanish = isSpanish(finalScript);
+
+    const voiceId = spanish ? "es-US-AlonsoNeural" : "en-US-GuyNeural";
 
     if (!image_url) {
       return NextResponse.json(
@@ -45,7 +88,7 @@ export async function POST(req: Request) {
 
     if (!finalScript) {
       return NextResponse.json(
-        { error: "Script is empty after cleanup." },
+        { error: "No clean script found." },
         { status: 400 }
       );
     }
@@ -63,7 +106,7 @@ export async function POST(req: Request) {
           input: finalScript,
           provider: {
             type: "microsoft",
-            voice_id: "en-US-GuyNeural",
+            voice_id: voiceId,
           },
         },
         config: {
