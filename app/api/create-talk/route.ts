@@ -1,61 +1,52 @@
 import { NextResponse } from "next/server";
 
-function isSpanish(text: string) {
-  const spanishWords = [
-    "que",
-    "puedes",
-    "dinero",
-    "familia",
-    "protección",
-    "educación",
-    "financiera",
-    "oportunidad",
-    "ingresos",
-    "mensaje",
-    "aprende",
-    "hola",
-    "quieres",
-    "trabajo",
-    "negocio",
-  ];
-
+function detectSpanish(text: string) {
   const lower = text.toLowerCase();
 
-  return spanishWords.some((word) => lower.includes(word));
+  const spanishSignals = [
+    "hola",
+    "amigos",
+    "dinero",
+    "ingresos",
+    "familia",
+    "puedes",
+    "quieres",
+    "oportunidad",
+    "negocio",
+    "financiera",
+    "educación",
+    "protección",
+    "mensaje",
+    "equipo",
+    "unirte",
+    "ganar",
+    "casa",
+  ];
+
+  return spanishSignals.some((word) => lower.includes(word));
 }
 
-function extractScript(input: string) {
+function cleanScript(input: string) {
   let text = input || "";
 
   text = text
     .replace(/\*\*/g, "")
     .replace(/###/g, "")
+    .replace(/HOOK:/gi, "")
+    .replace(/CAPTION:/gi, "")
+    .replace(/SCRIPT:/gi, "")
+    .replace(/CTA:/gi, "")
+    .replace(/CALL TO ACTION:/gi, "")
+    .replace(/GUION:/gi, "")
+    .replace(/GUIÓN:/gi, "")
+    .replace(/LLAMADO A LA ACCIÓN:/gi, "")
+    .replace(/Post \d+/gi, "")
+    .replace(/Publicación \d+/gi, "")
     .replace(/["“”]/g, "")
     .trim();
 
-  const scriptMatch =
-    text.match(/SCRIPT:\s*([\s\S]*?)(CTA:|CALL TO ACTION:|CAPTION:|HOOK:|$)/i) ||
-    text.match(/GUIÓN:\s*([\s\S]*?)(CTA:|LLAMADO A LA ACCIÓN:|CAPTION:|HOOK:|$)/i) ||
-    text.match(/GUION:\s*([\s\S]*?)(CTA:|LLAMADO A LA ACCIÓN:|CAPTION:|HOOK:|$)/i);
-
-  if (scriptMatch?.[1]) {
-    text = scriptMatch[1].trim();
-  }
-
-  text = text
-    .replace(/HOOK:[\s\S]*?(CAPTION:|SCRIPT:|GUIÓN:|GUION:)/i, "")
-    .replace(/CAPTION:[\s\S]*?(SCRIPT:|GUIÓN:|GUION:)/i, "")
-    .replace(/CTA:[\s\S]*/i, "")
-    .replace(/CALL TO ACTION:[\s\S]*/i, "")
-    .replace(/LLAMADO A LA ACCIÓN:[\s\S]*/i, "")
-    .replace(/Post 1/gi, "")
-    .replace(/Post 2[\s\S]*/gi, "")
-    .replace(/Publicación 1/gi, "")
-    .replace(/Publicación 2[\s\S]*/gi, "")
-    .trim();
-
-  if (text.length > 700) {
-    text = text.slice(0, 700);
+  if (text.length > 550) {
+    text = text.slice(0, 550);
   }
 
   return text;
@@ -74,10 +65,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const finalScript = extractScript(script);
-    const spanish = isSpanish(finalScript);
-
-    const voiceId = spanish ? "es-US-AlonsoNeural" : "en-US-GuyNeural";
+    const finalScript = cleanScript(script);
 
     if (!image_url) {
       return NextResponse.json(
@@ -92,6 +80,10 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const isSpanish = detectSpanish(finalScript);
+
+    const voiceId = isSpanish ? "es-MX-JorgeNeural" : "en-US-GuyNeural";
 
     const response = await fetch("https://api.d-id.com/talks", {
       method: "POST",
@@ -120,7 +112,12 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data?.message || data?.error || "D-ID failed.", details: data },
+        {
+          error: "D-ID failed.",
+          details: data,
+          voice_used: voiceId,
+          script_used: finalScript,
+        },
         { status: 500 }
       );
     }
