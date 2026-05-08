@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+const USER_EMAIL = "lou.delgado.pfs@gmail.com";
+
 const voices = [
   { label: "English - Male", value: "en-US-GuyNeural", lang: "en-US" },
   { label: "English - Female", value: "en-US-JennyNeural", lang: "en-US" },
@@ -110,13 +112,17 @@ export default function TalkingAvatarPage() {
     const data = await res.json();
 
     if (!data.id) {
-      setMessage(data.error || "Video failed.");
+      setMessage(data.error || "Video failed. Add D-ID credits if needed.");
       setLoading(false);
       return;
     }
 
     setTalkId(data.id);
     localStorage.setItem("latest_talk_id", data.id);
+    localStorage.setItem("latest_talk_script", script);
+    localStorage.setItem("latest_avatar_name", selectedAvatar.avatar_name);
+    localStorage.setItem("latest_avatar_image", selectedAvatar.image_url);
+
     setMessage("Video started. Wait 30 seconds, then click Check Video.");
     setLoading(false);
   }
@@ -141,7 +147,30 @@ export default function TalkingAvatarPage() {
 
     if (data.status === "done" && data.result_url) {
       setVideoUrl(data.result_url);
-      setMessage("Video ready.");
+
+      await fetch("/api/save-talking-video", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: USER_EMAIL,
+          avatar_name:
+            selectedAvatar?.avatar_name ||
+            localStorage.getItem("latest_avatar_name") ||
+            "Avatar",
+          avatar_image_url:
+            selectedAvatar?.image_url ||
+            localStorage.getItem("latest_avatar_image") ||
+            "",
+          script: script || localStorage.getItem("latest_talk_script") || "",
+          talk_id: talkId,
+          video_url: data.result_url,
+          status: "completed",
+        }),
+      });
+
+      setMessage("Video ready and saved to Video History.");
       return;
     }
 
@@ -167,8 +196,13 @@ export default function TalkingAvatarPage() {
                     : "border-white/10 bg-black"
                 }`}
               >
-                <img src={avatar.image_url} className="h-28 w-full rounded-xl object-cover" />
-                <p className="mt-2 text-center text-sm font-bold">{avatar.avatar_name}</p>
+                <img
+                  src={avatar.image_url}
+                  className="h-28 w-full rounded-xl object-cover"
+                />
+                <p className="mt-2 text-center text-sm font-bold">
+                  {avatar.avatar_name}
+                </p>
               </div>
             ))}
           </div>
@@ -212,7 +246,10 @@ export default function TalkingAvatarPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <button onClick={previewVoice} className="rounded-xl bg-purple-600 px-5 py-3 font-bold">
+            <button
+              onClick={previewVoice}
+              className="rounded-xl bg-purple-600 px-5 py-3 font-bold"
+            >
               Preview Voice
             </button>
 
@@ -224,9 +261,19 @@ export default function TalkingAvatarPage() {
               {loading ? "Creating..." : "Generate Video"}
             </button>
 
-            <button onClick={checkVideo} className="rounded-xl bg-zinc-700 px-5 py-3 font-bold">
+            <button
+              onClick={checkVideo}
+              className="rounded-xl bg-zinc-700 px-5 py-3 font-bold"
+            >
               Check Video
             </button>
+
+            <a
+              href="/talking-history"
+              className="rounded-xl bg-green-600 px-5 py-3 font-bold"
+            >
+              Video History
+            </a>
           </div>
 
           {message && <p className="mt-5 text-yellow-400">{message}</p>}
