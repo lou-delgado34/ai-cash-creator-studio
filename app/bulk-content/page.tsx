@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 
+const USER_EMAIL = "lou.delgado.pfs@gmail.com";
+
 export default function BulkContentPage() {
   const [topic, setTopic] = useState("extra income, recruiting, financial education");
   const [language, setLanguage] = useState("English");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const [message, setMessage] = useState("");
 
   async function generateBulk() {
     setLoading(true);
+    setMessage("");
     setResult("");
 
     const res = await fetch("/api/generate-content", {
@@ -28,8 +32,35 @@ export default function BulkContentPage() {
     setLoading(false);
   }
 
+  async function saveBulk() {
+    if (!result) {
+      setMessage("Generate posts first.");
+      return;
+    }
+
+    const res = await fetch("/api/save-social-content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: USER_EMAIL,
+        content_type: "Bulk Content",
+        platform: "Multi-platform",
+        language,
+        hook: "Bulk Generated Posts",
+        caption: result,
+        script: result,
+        call_to_action: "Message me for details.",
+        status: "draft",
+      }),
+    });
+
+    const data = await res.json();
+    setMessage(data.success ? "Bulk content saved to Content Library." : data.error || "Save failed.");
+  }
+
   function copyAll() {
     navigator.clipboard.writeText(result);
+    setMessage("Copied.");
   }
 
   return (
@@ -56,19 +87,28 @@ export default function BulkContentPage() {
         <button
           onClick={generateBulk}
           disabled={loading}
-          className="mt-5 rounded-xl bg-blue-600 px-6 py-3 font-bold hover:bg-blue-500 disabled:opacity-50"
+          className="mt-5 rounded-xl bg-blue-600 px-6 py-3 font-bold disabled:opacity-50"
         >
           {loading ? "Generating..." : "Generate 10 Posts"}
         </button>
 
+        {message && <p className="mt-4 text-yellow-400">{message}</p>}
+
         {result && (
           <div className="mt-8 rounded-3xl bg-zinc-900 p-6">
-            <button
-              onClick={copyAll}
-              className="rounded-xl bg-green-600 px-5 py-3 font-bold hover:bg-green-500"
-            >
-              Copy All
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button onClick={copyAll} className="rounded-xl bg-green-600 px-5 py-3 font-bold">
+                Copy All
+              </button>
+
+              <button onClick={saveBulk} className="rounded-xl bg-purple-600 px-5 py-3 font-bold">
+                Save to Library
+              </button>
+
+              <a href="/content-library" className="rounded-xl bg-zinc-700 px-5 py-3 font-bold">
+                Content Library
+              </a>
+            </div>
 
             <pre className="mt-5 whitespace-pre-wrap rounded-2xl bg-black p-5 text-sm">
               {result}
