@@ -13,6 +13,7 @@ export default function RootLayout({
     ["Home", "/"],
     ["Dashboard", "/dashboard"],
     ["Social Planner", "/social-planner"],
+    ["Content Library", "/content-library"],
     ["Bulk Content", "/bulk-content"],
     ["AI Models", "/ai-models"],
     ["Image Studio", "/image-studio"],
@@ -31,7 +32,7 @@ export default function RootLayout({
               <a
                 key={href}
                 href={href}
-                className="rounded-2xl border border-white/20 bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-black/40 hover:bg-blue-600 hover:text-white"
+                className="rounded-2xl border border-white/20 bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-black/40 hover:bg-blue-600"
               >
                 {label}
               </a>
