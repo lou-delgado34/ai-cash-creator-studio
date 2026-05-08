@@ -1,5 +1,26 @@
 import { NextResponse } from "next/server";
 
+function cleanScript(input: string) {
+  let script = input || "";
+
+  script = script
+    .replace(/###/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/HOOK:/gi, "")
+    .replace(/CAPTION:/gi, "")
+    .replace(/SCRIPT:/gi, "")
+    .replace(/CTA:/gi, "")
+    .replace(/Post 1/gi, "")
+    .replace(/Post 2[\s\S]*/gi, "")
+    .trim();
+
+  if (script.length > 900) {
+    script = script.slice(0, 900);
+  }
+
+  return script;
+}
+
 export async function POST(req: Request) {
   try {
     const { image_url, script } = await req.json();
@@ -13,6 +34,22 @@ export async function POST(req: Request) {
       );
     }
 
+    const finalScript = cleanScript(script);
+
+    if (!image_url) {
+      return NextResponse.json(
+        { error: "Missing avatar image." },
+        { status: 400 }
+      );
+    }
+
+    if (!finalScript) {
+      return NextResponse.json(
+        { error: "Script is empty after cleanup." },
+        { status: 400 }
+      );
+    }
+
     const response = await fetch("https://api.d-id.com/talks", {
       method: "POST",
       headers: {
@@ -23,16 +60,16 @@ export async function POST(req: Request) {
         source_url: image_url,
         script: {
           type: "text",
-          input: script,
+          input: finalScript,
           provider: {
             type: "microsoft",
-            voice_id: "en-US-GuyNeural"
-          }
+            voice_id: "en-US-GuyNeural",
+          },
         },
         config: {
           fluent: true,
-          pad_audio: 0.5
-        }
+          pad_audio: 0.5,
+        },
       }),
     });
 
@@ -40,7 +77,7 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data?.message || data?.error || "D-ID failed." },
+        { error: data?.message || data?.error || "D-ID failed.", details: data },
         { status: 500 }
       );
     }
