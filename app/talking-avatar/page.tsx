@@ -2,17 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-type Avatar = {
-  id: string;
-  avatar_name: string;
-  image_url: string;
-  character_notes: string;
-};
-
 export default function TalkingAvatarPage() {
-  const [avatars, setAvatars] = useState<Avatar[]>([]);
-  const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
   const [script, setScript] = useState("");
+  const [avatars, setAvatars] = useState<any[]>([]);
+  const [selectedAvatar, setSelectedAvatar] = useState<any>(null);
   const [message, setMessage] = useState("");
   const [talkId, setTalkId] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -26,6 +19,13 @@ export default function TalkingAvatarPage() {
 
   useEffect(() => {
     loadAvatars();
+
+    const savedScript = localStorage.getItem("talking_avatar_script");
+
+    if (savedScript) {
+      setScript(savedScript);
+      localStorage.removeItem("talking_avatar_script");
+    }
   }, []);
 
   async function createTalkingVideo() {
@@ -40,7 +40,7 @@ export default function TalkingAvatarPage() {
     }
 
     setLoading(true);
-    setMessage("Creating realistic voice and talking video...");
+    setMessage("Creating video...");
     setVideoUrl("");
     setTalkId("");
 
@@ -57,14 +57,14 @@ export default function TalkingAvatarPage() {
 
     const data = await res.json();
 
-    if (data.error || !data.id) {
-      setMessage(data.error || "Talking video failed.");
+    if (!data.id) {
+      setMessage(data.error || "Failed to create video.");
       setLoading(false);
       return;
     }
 
     setTalkId(data.id);
-    setMessage("Video started. Wait 20 seconds, then click Check Video.");
+    setMessage("Video started. Wait 20 seconds then click Check Video.");
     setLoading(false);
   }
 
@@ -74,7 +74,7 @@ export default function TalkingAvatarPage() {
       return;
     }
 
-    setMessage("Checking video...");
+    setMessage("Checking...");
 
     const res = await fetch("/api/get-talk", {
       method: "POST",
@@ -88,124 +88,67 @@ export default function TalkingAvatarPage() {
 
     if (data.status === "done" && data.result_url) {
       setVideoUrl(data.result_url);
-      setMessage("Video ready and saved.");
-
-      await fetch("/api/save-talking-video", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: "lou.delgado.pfs@gmail.com",
-          avatar_name: selectedAvatar?.avatar_name,
-          avatar_image_url: selectedAvatar?.image_url,
-          script,
-          talk_id: talkId,
-          video_url: data.result_url,
-          status: "completed",
-        }),
-      });
-
+      setMessage("Video ready.");
       return;
     }
 
-    setMessage(`Video status: ${data.status || "not ready yet"}. Wait and click Check Video again.`);
+    setMessage("Still processing...");
   }
 
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <section className="mx-auto max-w-6xl">
-        <h1 className="text-4xl font-bold">Talking Avatar Studio</h1>
 
-        <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-900 p-6">
-          <h2 className="text-2xl font-bold">Select Avatar</h2>
+        <h1 className="text-4xl font-bold">Talking Avatar</h1>
 
-          <div className="mt-4 flex gap-4 overflow-x-auto">
-            {avatars.map((avatar) => (
-              <div
-                key={avatar.id}
-                onClick={() => setSelectedAvatar(avatar)}
-                className={`min-w-40 cursor-pointer rounded-2xl border p-3 ${
-                  selectedAvatar?.id === avatar.id
-                    ? "border-blue-500 bg-blue-500/10"
-                    : "border-white/10 bg-black"
-                }`}
-              >
-                <img
-                  src={avatar.image_url}
-                  alt={avatar.avatar_name}
-                  className="h-32 w-full rounded-xl object-cover"
-                />
-                <p className="mt-2 text-center text-sm font-bold">
-                  {avatar.avatar_name}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {avatars.length === 0 && (
-            <p className="mt-4 text-yellow-400">
-              No avatars saved yet. Go to Image Studio and save one as avatar.
-            </p>
-          )}
+        {/* AVATAR SELECT */}
+        <div className="mt-6 flex gap-4 overflow-x-auto">
+          {avatars.map((a) => (
+            <div
+              key={a.id}
+              onClick={() => setSelectedAvatar(a)}
+              className={`cursor-pointer rounded-xl p-2 ${
+                selectedAvatar?.id === a.id ? "bg-blue-600" : "bg-zinc-900"
+              }`}
+            >
+              <img src={a.image_url} className="w-32 h-32 object-cover rounded-lg" />
+              <p className="text-center mt-2 text-sm">{a.avatar_name}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-900 p-6">
-          <h2 className="text-2xl font-bold">Script</h2>
+        {/* SCRIPT */}
+        <textarea
+          value={script}
+          onChange={(e) => setScript(e.target.value)}
+          className="mt-6 w-full min-h-40 bg-zinc-900 p-4 rounded-xl"
+          placeholder="Write script..."
+        />
 
-          <textarea
-            value={script}
-            onChange={(e) => setScript(e.target.value)}
-            className="mt-4 min-h-40 w-full rounded-2xl bg-black p-4 text-white"
-            placeholder="Write what your avatar should say..."
-          />
+        {/* BUTTONS */}
+        <div className="mt-4 flex gap-3 flex-wrap">
+          <button
+            onClick={createTalkingVideo}
+            disabled={loading}
+            className="bg-blue-600 px-6 py-3 rounded-xl font-bold"
+          >
+            {loading ? "Creating..." : "Generate Video"}
+          </button>
 
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              onClick={createTalkingVideo}
-              disabled={loading}
-              className="rounded-2xl bg-blue-600 px-6 py-4 font-bold hover:bg-blue-500 disabled:opacity-50"
-            >
-              {loading ? "Creating..." : "Generate Talking Video"}
-            </button>
-
-            <button
-              onClick={checkVideo}
-              className="rounded-2xl bg-zinc-800 px-6 py-4 font-bold hover:bg-zinc-700"
-            >
-              Check Video
-            </button>
-
-            <a
-              href="/talking-history"
-              className="rounded-2xl bg-green-600 px-6 py-4 font-bold hover:bg-green-500"
-            >
-              Video History
-            </a>
-          </div>
-
-          {message && <p className="mt-4 text-yellow-400">{message}</p>}
+          <button
+            onClick={checkVideo}
+            className="bg-zinc-700 px-6 py-3 rounded-xl"
+          >
+            Check Video
+          </button>
         </div>
+
+        {message && <p className="mt-4 text-yellow-400">{message}</p>}
 
         {videoUrl && (
-          <div className="mt-8 rounded-3xl border border-white/10 bg-zinc-900 p-6">
-            <h2 className="text-2xl font-bold">Your Talking Avatar Video</h2>
-
-            <video
-              src={videoUrl}
-              controls
-              className="mt-5 w-full rounded-2xl"
-            />
-
-            <a
-              href={videoUrl}
-              target="_blank"
-              className="mt-5 inline-block rounded-2xl bg-green-600 px-6 py-4 font-bold hover:bg-green-500"
-            >
-              Open / Download Video
-            </a>
-          </div>
+          <video src={videoUrl} controls className="mt-6 w-full rounded-xl" />
         )}
+
       </section>
     </main>
   );
