@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 
-function detectSpanish(text: string) {
+function isSpanish(text: string) {
   const lower = text.toLowerCase();
-
-  const spanishSignals = [
+  return [
     "hola",
     "amigos",
     "dinero",
@@ -18,12 +17,9 @@ function detectSpanish(text: string) {
     "protección",
     "mensaje",
     "equipo",
-    "unirte",
     "ganar",
-    "casa",
-  ];
-
-  return spanishSignals.some((word) => lower.includes(word));
+    "hogar",
+  ].some((word) => lower.includes(word));
 }
 
 function cleanScript(input: string) {
@@ -45,11 +41,54 @@ function cleanScript(input: string) {
     .replace(/["“”]/g, "")
     .trim();
 
-  if (text.length > 550) {
-    text = text.slice(0, 550);
+  if (text.length > 500) {
+    text = text.slice(0, 500);
   }
 
   return text;
+}
+
+async function createDidTalk({
+  didKey,
+  imageUrl,
+  script,
+  voiceId,
+}: {
+  didKey: string;
+  imageUrl: string;
+  script: string;
+  voiceId: string;
+}) {
+  const response = await fetch("https://api.d-id.com/talks", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${didKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      source_url: imageUrl,
+      script: {
+        type: "text",
+        input: script,
+        provider: {
+          type: "microsoft",
+          voice_id: voiceId,
+        },
+      },
+      config: {
+        fluent: true,
+        pad_audio: 0.5,
+      },
+    }),
+  });
+
+  const data = await response.json();
+
+  return {
+    ok: response.ok,
+    data,
+    voiceId,
+  };
 }
 
 export async function POST(req: Request) {
@@ -81,48 +120,51 @@ export async function POST(req: Request) {
       );
     }
 
-    const isSpanish = detectSpanish(finalScript);
+    const spanish = isSpanish(finalScript);
 
-    const voiceId = isSpanish ? "es-MX-JorgeNeural" : "en-US-GuyNeural";
+    const voiceList = spanish
+      ? [
+          "es-MX-JorgeNeural",
+          "es-US-AlonsoNeural",
+          "es-ES-AlvaroNeural",
+          "es-MX-DaliaNeural",
+          "es-US-PalomaNeural",
+        ]
+      : ["en-US-GuyNeural", "en-US-JennyNeural"];
 
-    const response = await fetch("https://api.d-id.com/talks", {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${didKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        source_url: image_url,
-        script: {
-          type: "text",
-          input: finalScript,
-          provider: {
-            type: "microsoft",
-            voice_id: voiceId,
-          },
-        },
-        config: {
-          fluent: true,
-          pad_audio: 0.5,
-        },
-      }),
-    });
+    const errors: any[] = [];
 
-    const data = await response.json();
+    for (const voiceId of voiceList) {
+      const attempt = await createDidTalk({
+        didKey,
+        imageUrl: image_url,
+        script: finalScript,
+        voiceId,
+      });
 
-    if (!response.ok) {
-      return NextResponse.json(
-        {
-          error: "D-ID failed.",
-          details: data,
+      if (attempt.ok) {
+        return NextResponse.json({
+          ...attempt.data,
           voice_used: voiceId,
           script_used: finalScript,
-        },
-        { status: 500 }
-      );
+        });
+      }
+
+      errors.push({
+        voiceId,
+        error: attempt.data,
+      });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(
+      {
+        error: "D-ID failed with all voices.",
+        script_used: finalScript,
+        tried_voices: voiceList,
+        details: errors,
+      },
+      { status: 500 }
+    );
   } catch {
     return NextResponse.json(
       { error: "Create talk route crashed." },
