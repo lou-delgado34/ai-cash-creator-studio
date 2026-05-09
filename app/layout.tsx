@@ -13,6 +13,7 @@ export default function RootLayout({
     ["Home", "/"],
     ["Launch Checklist", "/launch-checklist"],
     ["Daily Workflow", "/daily-workflow"],
+    ["Twin Prep", "/personal-twin-prep"],
     ["Dashboard", "/dashboard"],
     ["Calendar", "/content-calendar"],
     ["Social Planner", "/social-planner"],
