@@ -13,26 +13,17 @@ type TalkingVideo = {
 
 export default function TalkingHistoryPage() {
   const [videos, setVideos] = useState<TalkingVideo[]>([]);
-  const [loading, setLoading] = useState(true);
 
   async function loadVideos() {
-    setLoading(true);
     const res = await fetch("/api/list-talking-videos");
     const data = await res.json();
     setVideos(data.videos || []);
-    setLoading(false);
   }
 
-  async function deleteVideo(id: string) {
-    await fetch("/api/delete-talking-video", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id }),
-    });
-
-    loadVideos();
+  function prepPost(video: TalkingVideo) {
+    localStorage.setItem("post_caption", video.script || "");
+    localStorage.setItem("post_video_url", video.video_url || "");
+    window.location.href = "/post-prep";
   }
 
   useEffect(() => {
@@ -41,67 +32,71 @@ export default function TalkingHistoryPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
-      <section className="mx-auto max-w-6xl">
-        <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold">Talking Video History</h1>
+      <section className="mx-auto max-w-7xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-widest text-green-400">
+              Finished Video Library
+            </p>
+            <h1 className="mt-2 text-5xl font-bold">Video History</h1>
+            <p className="mt-3 text-zinc-400">
+              Manage finished avatar videos, download them, prepare captions, or delete old videos.
+            </p>
+          </div>
 
-          <button
-            onClick={loadVideos}
-            className="rounded-xl bg-blue-600 px-4 py-2 font-bold hover:bg-blue-500"
-          >
+          <button onClick={loadVideos} className="rounded-xl bg-blue-600 px-5 py-3 font-bold">
             Refresh
           </button>
         </div>
 
-        {loading && <p className="mt-6 text-zinc-400">Loading...</p>}
-
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
           {videos.map((video) => (
-            <div key={video.id} className="rounded-3xl bg-zinc-900 p-5">
-              <h2 className="text-xl font-bold">
-                {video.avatar_name || "Talking Video"}
-              </h2>
+            <div key={video.id} className="rounded-3xl border border-white/10 bg-zinc-900 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold">{video.avatar_name || "Talking Video"}</h2>
+                  <p className="mt-1 text-sm text-zinc-400">
+                    {video.created_at ? new Date(video.created_at).toLocaleString() : "Saved video"}
+                  </p>
+                </div>
 
-              <p className="text-sm text-zinc-400">
-                {new Date(video.created_at).toLocaleString()}
-              </p>
+                <span className="rounded-xl bg-green-600 px-3 py-1 text-sm font-bold">
+                  {video.status || "completed"}
+                </span>
+              </div>
 
               {video.video_url && (
-                <video
-                  src={video.video_url}
-                  controls
-                  className="mt-4 w-full rounded-xl"
-                />
+                <video src={video.video_url} controls className="mt-5 w-full rounded-2xl" />
               )}
 
-              <p className="mt-3 text-sm text-zinc-300 whitespace-pre-wrap">
-                {video.script}
-              </p>
+              <div className="mt-5 rounded-2xl bg-black p-4">
+                <p className="text-sm font-bold text-blue-400">Script Used</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">{video.script}</p>
+              </div>
 
-              <div className="mt-4 flex gap-3">
+              <div className="mt-5 flex flex-wrap gap-3">
                 {video.video_url && (
                   <a
                     href={video.video_url}
                     target="_blank"
-                    className="rounded-lg bg-green-600 px-4 py-2 text-sm font-bold hover:bg-green-500"
+                    className="rounded-xl bg-green-600 px-4 py-3 text-sm font-bold"
                   >
-                    Download
+                    Download Video
                   </a>
                 )}
 
-                <button
-                  onClick={() => deleteVideo(video.id)}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold hover:bg-red-500"
-                >
-                  Delete
+                <button onClick={() => prepPost(video)} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold">
+                  Prep Social Post
                 </button>
               </div>
             </div>
           ))}
         </div>
 
-        {videos.length === 0 && !loading && (
-          <p className="mt-8 text-zinc-400">No videos yet.</p>
+        {videos.length === 0 && (
+          <p className="mt-8 rounded-2xl bg-zinc-900 p-6 text-zinc-400">
+            No finished videos saved yet.
+          </p>
         )}
       </section>
     </main>
