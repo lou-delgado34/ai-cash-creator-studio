@@ -11,14 +11,13 @@ export default function RootLayout({
 }) {
   const links = [
     ["Home", "/"],
+    ["Launch Checklist", "/launch-checklist"],
     ["Dashboard", "/dashboard"],
-    ["Twin Persona", "/twin-persona"],
     ["Social Planner", "/social-planner"],
     ["Bulk Content", "/bulk-content"],
     ["Content Library", "/content-library"],
     ["Calendar", "/content-calendar"],
     ["Post Prep", "/post-prep"],
-    ["Twin Checklist", "/digital-twin-checklist"],
     ["Avatar Builder", "/avatar-builder"],
     ["Talking Avatar", "/talking-avatar"],
     ["Video History", "/talking-history"],
