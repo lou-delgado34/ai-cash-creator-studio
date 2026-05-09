@@ -104,13 +104,23 @@ Rules:
     setMessage("Script copied.");
   }
 
+  function sendToTalkingAvatar() {
+    if (!script) {
+      setMessage("Generate a script first.");
+      return;
+    }
+
+    localStorage.setItem("talking_avatar_script", script);
+    window.location.href = "/talking-avatar";
+  }
+
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <section className="mx-auto max-w-5xl">
         <h1 className="text-4xl font-bold">Social Planner + AI Script Engine</h1>
 
         <p className="mt-3 text-zinc-400">
-          This page only creates and saves scripts. It does not use D-ID video credits.
+          Create scripts safely. This page does not use D-ID video credits.
         </p>
 
         <div className="mt-8 grid gap-4 rounded-3xl bg-zinc-900 p-6">
@@ -167,9 +177,12 @@ Rules:
         <div className="mt-8 rounded-3xl bg-zinc-900 p-6">
           <h2 className="text-2xl font-bold">Generated Script</h2>
 
-          <div className="mt-4 min-h-40 whitespace-pre-wrap rounded-2xl bg-black p-5 text-zinc-200">
-            {script || "Your script will appear here..."}
-          </div>
+          <textarea
+            value={script}
+            onChange={(e) => setScript(e.target.value)}
+            className="mt-4 min-h-40 w-full rounded-2xl bg-black p-5 text-white"
+            placeholder="Your script will appear here..."
+          />
 
           {script && (
             <div className="mt-5 flex flex-wrap gap-3">
@@ -187,9 +200,16 @@ Rules:
                 Save Script to Library
               </button>
 
+              <button
+                onClick={sendToTalkingAvatar}
+                className="rounded-xl bg-purple-600 px-5 py-3 font-bold"
+              >
+                Send to Talking Avatar
+              </button>
+
               <a
                 href="/content-library"
-                className="rounded-xl bg-purple-600 px-5 py-3 font-bold"
+                className="rounded-xl bg-blue-600 px-5 py-3 font-bold"
               >
                 Open Content Library
               </a>
