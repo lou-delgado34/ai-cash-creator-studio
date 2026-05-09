@@ -12,15 +12,15 @@ export default function RootLayout({
   const links = [
     ["Home", "/"],
     ["Launch Checklist", "/launch-checklist"],
+    ["Daily Workflow", "/daily-workflow"],
     ["Dashboard", "/dashboard"],
-    ["Social Planner", "/social-planner"],
-    ["Bulk Content", "/bulk-content"],
-    ["Content Library", "/content-library"],
     ["Calendar", "/content-calendar"],
-    ["Post Prep", "/post-prep"],
+    ["Social Planner", "/social-planner"],
+    ["Content Library", "/content-library"],
     ["Avatar Builder", "/avatar-builder"],
     ["Talking Avatar", "/talking-avatar"],
     ["Video History", "/talking-history"],
+    ["Post Prep", "/post-prep"],
     ["Pricing", "/pricing"],
   ];
 
