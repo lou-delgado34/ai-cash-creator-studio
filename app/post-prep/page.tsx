@@ -10,6 +10,14 @@ export default function PostPrepPage() {
   );
   const [cta, setCta] = useState("Comment INFO or send me a message.");
 
+  const [posted, setPosted] = useState({
+    instagram: false,
+    tiktok: false,
+    facebook: false,
+    youtube: false,
+    linkedin: false,
+  });
+
   useEffect(() => {
     const savedCaption = localStorage.getItem("post_caption");
     const savedVideoUrl = localStorage.getItem("post_video_url");
@@ -22,24 +30,27 @@ export default function PostPrepPage() {
     navigator.clipboard.writeText(`${caption}\n\n${cta}\n\n${hashtags}`);
   }
 
+  function togglePlatform(platform: keyof typeof posted) {
+    setPosted({
+      ...posted,
+      [platform]: !posted[platform],
+    });
+  }
+
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <section className="mx-auto max-w-5xl">
         <h1 className="text-4xl font-bold">Post Prep</h1>
 
         {videoUrl && (
-          <video
-            src={videoUrl}
-            controls
-            className="mt-8 w-full rounded-2xl"
-          />
+          <video src={videoUrl} controls className="mt-8 w-full rounded-2xl" />
         )}
 
         <textarea
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
           className="mt-8 min-h-40 w-full rounded-2xl bg-zinc-900 p-4 text-white"
-          placeholder="Paste your caption..."
+          placeholder="Caption..."
         />
 
         <input
@@ -62,6 +73,24 @@ export default function PostPrepPage() {
         >
           Copy Post Text
         </button>
+
+        <div className="mt-8 rounded-3xl bg-zinc-900 p-6">
+          <h2 className="text-2xl font-bold">Posting Checklist</h2>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {Object.entries(posted).map(([platform, value]) => (
+              <button
+                key={platform}
+                onClick={() => togglePlatform(platform as keyof typeof posted)}
+                className={`rounded-xl px-5 py-4 text-left font-bold ${
+                  value ? "bg-green-600" : "bg-zinc-800"
+                }`}
+              >
+                {value ? "✅" : "⬜"} Posted to {platform}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
     </main>
   );
