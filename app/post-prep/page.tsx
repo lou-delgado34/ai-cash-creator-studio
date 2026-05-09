@@ -1,11 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function PostPrepPage() {
   const [caption, setCaption] = useState("");
-  const [hashtags, setHashtags] = useState("#ExtraIncome #FinancialEducation #BusinessOpportunity");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [hashtags, setHashtags] = useState(
+    "#ExtraIncome #FinancialEducation #BusinessOpportunity"
+  );
   const [cta, setCta] = useState("Comment INFO or send me a message.");
+
+  useEffect(() => {
+    const savedCaption = localStorage.getItem("post_caption");
+    const savedVideoUrl = localStorage.getItem("post_video_url");
+
+    if (savedCaption) setCaption(savedCaption);
+    if (savedVideoUrl) setVideoUrl(savedVideoUrl);
+  }, []);
 
   function copyPost() {
     navigator.clipboard.writeText(`${caption}\n\n${cta}\n\n${hashtags}`);
@@ -15,9 +26,14 @@ export default function PostPrepPage() {
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <section className="mx-auto max-w-5xl">
         <h1 className="text-4xl font-bold">Post Prep</h1>
-        <p className="mt-3 text-zinc-400">
-          Prepare your caption, hashtags, and CTA before posting.
-        </p>
+
+        {videoUrl && (
+          <video
+            src={videoUrl}
+            controls
+            className="mt-8 w-full rounded-2xl"
+          />
+        )}
 
         <textarea
           value={caption}
