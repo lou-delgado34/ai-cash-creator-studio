@@ -16,6 +16,7 @@ export default function RootLayout({
     ["Content Library", "/content-library"],
     ["Bulk Content", "/bulk-content"],
     ["Post Prep", "/post-prep"],
+    ["Twin Checklist", "/digital-twin-checklist"],
     ["Image Studio", "/image-studio"],
     ["Avatar Builder", "/avatar-builder"],
     ["Talking Avatar", "/talking-avatar"],
