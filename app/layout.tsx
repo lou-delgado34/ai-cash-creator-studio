@@ -12,6 +12,7 @@ export default function RootLayout({
   const links = [
     ["Home", "/"],
     ["Dashboard", "/dashboard"],
+    ["Twin Persona", "/twin-persona"],
     ["Social Planner", "/social-planner"],
     ["Bulk Content", "/bulk-content"],
     ["Content Library", "/content-library"],
