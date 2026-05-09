@@ -15,7 +15,7 @@ export default function RootLayout({
     ["Social Planner", "/social-planner"],
     ["Content Library", "/content-library"],
     ["Bulk Content", "/bulk-content"],
-    ["AI Models", "/ai-models"],
+    ["Post Prep", "/post-prep"],
     ["Image Studio", "/image-studio"],
     ["Avatar Builder", "/avatar-builder"],
     ["Talking Avatar", "/talking-avatar"],
@@ -32,7 +32,7 @@ export default function RootLayout({
               <a
                 key={href}
                 href={href}
-                className="rounded-2xl border border-white/20 bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-black/40 hover:bg-blue-600"
+                className="rounded-2xl border border-white/20 bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-blue-600"
               >
                 {label}
               </a>
