@@ -25,6 +25,7 @@ export default function TalkingAvatarPage() {
   const [talkId, setTalkId] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [creditConfirm, setCreditConfirm] = useState(false);
 
   async function loadAvatars() {
     const res = await fetch("/api/list-avatars");
@@ -34,8 +35,10 @@ export default function TalkingAvatarPage() {
 
   useEffect(() => {
     loadAvatars();
+
     const savedScript = localStorage.getItem("talking_avatar_script");
     const latestTalkId = localStorage.getItem("latest_talk_id");
+
     if (savedScript) setScript(savedScript);
     if (latestTalkId) setTalkId(latestTalkId);
   }, []);
@@ -43,34 +46,58 @@ export default function TalkingAvatarPage() {
   function previewVoice() {
     const selectedVoice = voices.find((v) => v.value === voiceId);
     const clean = cleanPreview(script);
-    if (!clean) return setMessage("Add a script first.");
+
+    if (!clean) {
+      setMessage("Add a script first.");
+      return;
+    }
 
     window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = selectedVoice?.lang || "en-US";
     utterance.rate = speed;
+
     window.speechSynthesis.speak(utterance);
-    setMessage("Voice preview playing.");
+    setMessage("Voice preview playing. No D-ID credits used.");
   }
 
   async function createTalkingVideo() {
-    if (!selectedAvatar) return setMessage("Select an avatar first.");
-    if (!script.trim()) return setMessage("Write a script first.");
+    if (!creditConfirm) {
+      setMessage("Check the credit confirmation box before generating video.");
+      return;
+    }
+
+    if (!selectedAvatar) {
+      setMessage("Select an avatar first.");
+      return;
+    }
+
+    if (!script.trim()) {
+      setMessage("Write a script first.");
+      return;
+    }
 
     setLoading(true);
-    setMessage("Creating video...");
+    setMessage("Creating D-ID video. This may use credits...");
     setVideoUrl("");
 
     const res = await fetch("/api/create-talk", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image_url: selectedAvatar.image_url, script, voice_id: voiceId }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_url: selectedAvatar.image_url,
+        script,
+        voice_id: voiceId,
+      }),
     });
 
     const data = await res.json();
 
     if (!data.id) {
-      setMessage(data.error || "Video failed. Add D-ID credits if needed.");
+      setMessage(data.error || "Video failed. D-ID credits may be needed.");
       setLoading(false);
       return;
     }
@@ -80,18 +107,24 @@ export default function TalkingAvatarPage() {
     localStorage.setItem("latest_talk_script", script);
     localStorage.setItem("latest_avatar_name", selectedAvatar.avatar_name);
     localStorage.setItem("latest_avatar_image", selectedAvatar.image_url);
-    setMessage("Video started. Wait 30 seconds, then click Check Video.");
+
+    setMessage("Video started. Wait 30 seconds, then click Check Current Video.");
     setLoading(false);
   }
 
   async function checkVideo() {
-    if (!talkId) return setMessage("Generate a video first.");
+    if (!talkId) {
+      setMessage("Generate a video first.");
+      return;
+    }
 
     setMessage("Checking video...");
 
     const res = await fetch("/api/get-talk", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ talkId }),
     });
 
@@ -112,24 +145,34 @@ export default function TalkingAvatarPage() {
         <p className="text-sm font-bold uppercase tracking-widest text-blue-400">
           Creation Studio
         </p>
+
         <h1 className="mt-2 text-5xl font-bold">Talking Avatar Builder</h1>
+
         <p className="mt-3 text-zinc-400">
-          Select an avatar, paste a script, preview the voice, then generate a new talking video.
+          This is the only page that can use D-ID credits. Preview voice is free.
         </p>
 
         <div className="mt-8 rounded-3xl border border-blue-500/30 bg-blue-950/20 p-6">
           <h2 className="text-2xl font-bold">Step 1: Choose Avatar</h2>
+
           <div className="mt-4 flex gap-4 overflow-x-auto">
             {avatars.map((avatar) => (
               <div
                 key={avatar.id}
                 onClick={() => setSelectedAvatar(avatar)}
                 className={`min-w-36 cursor-pointer rounded-2xl border p-3 ${
-                  selectedAvatar?.id === avatar.id ? "border-blue-500 bg-blue-600/30" : "border-white/10 bg-black"
+                  selectedAvatar?.id === avatar.id
+                    ? "border-blue-500 bg-blue-600/30"
+                    : "border-white/10 bg-black"
                 }`}
               >
-                <img src={avatar.image_url} className="h-28 w-full rounded-xl object-cover" />
-                <p className="mt-2 text-center text-sm font-bold">{avatar.avatar_name}</p>
+                <img
+                  src={avatar.image_url}
+                  className="h-28 w-full rounded-xl object-cover"
+                />
+                <p className="mt-2 text-center text-sm font-bold">
+                  {avatar.avatar_name}
+                </p>
               </div>
             ))}
           </div>
@@ -151,11 +194,14 @@ export default function TalkingAvatarPage() {
             className="mt-4 w-full rounded-2xl bg-black p-4 text-white"
           >
             {voices.map((voice) => (
-              <option key={voice.value} value={voice.value}>{voice.label}</option>
+              <option key={voice.value} value={voice.value}>
+                {voice.label}
+              </option>
             ))}
           </select>
 
           <p className="mt-5 font-bold">Preview Speed: {speed}</p>
+
           <input
             type="range"
             min="0.7"
@@ -166,20 +212,47 @@ export default function TalkingAvatarPage() {
             className="mt-3 w-full"
           />
 
+          <div className="mt-6 rounded-2xl border border-yellow-500/30 bg-yellow-950/20 p-5">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={creditConfirm}
+                onChange={(e) => setCreditConfirm(e.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                I understand that clicking Generate New Video may use D-ID credits.
+              </span>
+            </label>
+          </div>
+
           <div className="mt-6 flex flex-wrap gap-3">
-            <button onClick={previewVoice} className="rounded-xl bg-purple-600 px-5 py-3 font-bold">
-              Preview Voice
+            <button
+              onClick={previewVoice}
+              className="rounded-xl bg-purple-600 px-5 py-3 font-bold"
+            >
+              Preview Voice Free
             </button>
 
-            <button onClick={createTalkingVideo} disabled={loading} className="rounded-xl bg-blue-600 px-5 py-3 font-bold disabled:opacity-50">
+            <button
+              onClick={createTalkingVideo}
+              disabled={loading}
+              className="rounded-xl bg-blue-600 px-5 py-3 font-bold disabled:opacity-50"
+            >
               {loading ? "Creating..." : "Generate New Video"}
             </button>
 
-            <button onClick={checkVideo} className="rounded-xl bg-zinc-700 px-5 py-3 font-bold">
+            <button
+              onClick={checkVideo}
+              className="rounded-xl bg-zinc-700 px-5 py-3 font-bold"
+            >
               Check Current Video
             </button>
 
-            <a href="/talking-history" className="rounded-xl bg-green-600 px-5 py-3 font-bold">
+            <a
+              href="/talking-history"
+              className="rounded-xl bg-green-600 px-5 py-3 font-bold"
+            >
               Go to Video History
             </a>
           </div>
