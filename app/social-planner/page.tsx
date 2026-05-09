@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+const USER_EMAIL = "lou.delgado.pfs@gmail.com";
+
 export default function SocialPlannerPage() {
   const [platform, setPlatform] = useState("Instagram Reels");
   const [language, setLanguage] = useState("English");
@@ -10,6 +12,7 @@ export default function SocialPlannerPage() {
 
   const [script, setScript] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const savedPlatform = localStorage.getItem("planner_platform");
@@ -25,134 +28,175 @@ export default function SocialPlannerPage() {
 
   async function generateScript() {
     setLoading(true);
+    setMessage("");
 
     const prompt = `
-You are a viral social media expert.
+You are a viral social media strategist.
 
 Platform: ${platform}
 Goal: ${goal}
 Language: ${language}
 Topic: ${topic}
 
-Write a SHORT high-converting script (10-20 seconds).
+Create a short, high-converting social media script.
 
 Rules:
-- Strong hook in first line
-- Simple language
-- Emotional trigger
-- End with CTA (comment or message)
-
-Output ONLY the script.
+- Match the platform strategy.
+- TikTok = fast hook, curiosity, simple words.
+- Instagram Reels = visual, emotional, short.
+- Facebook = story-based and community-driven.
+- LinkedIn = professional and credibility-based.
+- Use the selected language only.
+- Do NOT include hashtags.
+- Do NOT include captions.
+- Do NOT include extra explanation.
+- Output only the spoken script.
 `;
 
     const res = await fetch("/api/generate-script", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ prompt }),
     });
 
     const data = await res.json();
-    setScript(data.text);
+    setScript(data.text || "No script generated.");
     setLoading(false);
   }
 
-  async function createVideo() {
-    if (!script) return alert("Generate script first");
+  async function saveScript() {
+    if (!script) {
+      setMessage("Generate a script first.");
+      return;
+    }
 
-    setLoading(true);
-
-    const res = await fetch("/api/generate-video", {
+    const res = await fetch("/api/save-social-content", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
+        email: USER_EMAIL,
+        content_type: goal,
+        platform,
+        language,
+        hook: "Generated script",
+        caption: script,
         script,
-        avatar: "alex", // you can replace later with real avatar
+        call_to_action: "Message me for details.",
+        status: "draft",
       }),
     });
 
     const data = await res.json();
 
-    // save to history
-    const existing =
-      JSON.parse(localStorage.getItem("video_history") || "[]");
-
-    existing.unshift({
-      id: Date.now(),
-      script,
-      videoUrl: data.url,
-      createdAt: new Date().toISOString(),
-    });
-
-    localStorage.setItem("video_history", JSON.stringify(existing));
-
-    setLoading(false);
-
-    window.location.href = "/video-history";
+    setMessage(
+      data.success
+        ? "Script saved to Content Library. No video credits used."
+        : data.error || "Save failed."
+    );
   }
 
-  async function autoCreateAll() {
-    await generateScript();
-
-    setTimeout(async () => {
-      await createVideo();
-    }, 1500);
+  function copyScript() {
+    navigator.clipboard.writeText(script);
+    setMessage("Script copied.");
   }
 
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">
-      <section className="mx-auto max-w-4xl">
-        <h1 className="text-4xl font-bold">Social Planner + AI Engine</h1>
+      <section className="mx-auto max-w-5xl">
+        <h1 className="text-4xl font-bold">Social Planner + AI Script Engine</h1>
 
-        <div className="mt-6 space-y-4">
-          <input
+        <p className="mt-3 text-zinc-400">
+          This page only creates and saves scripts. It does not use D-ID video credits.
+        </p>
+
+        <div className="mt-8 grid gap-4 rounded-3xl bg-zinc-900 p-6">
+          <select
             value={platform}
-            readOnly
-            className="w-full rounded-xl bg-zinc-900 p-4"
-          />
-          <input
-            value={language}
-            readOnly
-            className="w-full rounded-xl bg-zinc-900 p-4"
-          />
-          <input
-            value={goal}
-            readOnly
-            className="w-full rounded-xl bg-zinc-900 p-4"
-          />
-          <input
-            value={topic}
-            readOnly
-            className="w-full rounded-xl bg-zinc-900 p-4"
-          />
-        </div>
+            onChange={(e) => setPlatform(e.target.value)}
+            className="rounded-xl bg-black p-4 text-white"
+          >
+            <option>Instagram Reels</option>
+            <option>TikTok</option>
+            <option>Facebook</option>
+            <option>YouTube Shorts</option>
+            <option>LinkedIn</option>
+          </select>
 
-        <div className="mt-6 space-x-3">
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="rounded-xl bg-black p-4 text-white"
+          >
+            <option>English</option>
+            <option>Spanish</option>
+          </select>
+
+          <select
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            className="rounded-xl bg-black p-4 text-white"
+          >
+            <option>Recruit new agents</option>
+            <option>Book appointments</option>
+            <option>Financial education</option>
+            <option>Promote business opportunity</option>
+            <option>Invite to Zoom or event</option>
+            <option>Build personal brand</option>
+          </select>
+
+          <textarea
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            className="min-h-28 rounded-xl bg-black p-4 text-white"
+            placeholder="Topic..."
+          />
+
           <button
             onClick={generateScript}
-            className="rounded-xl bg-blue-600 px-6 py-3 font-bold"
+            disabled={loading}
+            className="rounded-xl bg-blue-600 px-6 py-3 font-bold disabled:opacity-50"
           >
-            Generate Script
-          </button>
-
-          <button
-            onClick={createVideo}
-            className="rounded-xl bg-green-600 px-6 py-3 font-bold"
-          >
-            Create Video
-          </button>
-
-          <button
-            onClick={autoCreateAll}
-            className="rounded-xl bg-purple-600 px-6 py-3 font-bold"
-          >
-            🚀 Auto Create (Script + Video)
+            {loading ? "Generating..." : "Generate Script"}
           </button>
         </div>
 
-        <div className="mt-6 rounded-xl bg-zinc-900 p-5">
-          {loading ? (
-            <p>Processing...</p>
-          ) : (
-            <p className="whitespace-pre-line">{script || "Your script will appear here..."}</p>
+        <div className="mt-8 rounded-3xl bg-zinc-900 p-6">
+          <h2 className="text-2xl font-bold">Generated Script</h2>
+
+          <div className="mt-4 min-h-40 whitespace-pre-wrap rounded-2xl bg-black p-5 text-zinc-200">
+            {script || "Your script will appear here..."}
+          </div>
+
+          {script && (
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                onClick={copyScript}
+                className="rounded-xl bg-zinc-700 px-5 py-3 font-bold"
+              >
+                Copy Script
+              </button>
+
+              <button
+                onClick={saveScript}
+                className="rounded-xl bg-green-600 px-5 py-3 font-bold"
+              >
+                Save Script to Library
+              </button>
+
+              <a
+                href="/content-library"
+                className="rounded-xl bg-purple-600 px-5 py-3 font-bold"
+              >
+                Open Content Library
+              </a>
+            </div>
           )}
+
+          {message && <p className="mt-5 text-yellow-400">{message}</p>}
         </div>
       </section>
     </main>
