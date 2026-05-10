@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Missing ELEVENLABS_API_KEY." },
+        { error: "API key not found in Vercel." },
         { status: 500 }
       );
     }
@@ -29,9 +29,9 @@ export async function POST(req: Request) {
           text,
           model_id: "eleven_multilingual_v2",
           voice_settings: {
-            stability: 0.3,
-            similarity_boost: 0.85,
-            style: 0.9,
+            stability: 0.2,
+            similarity_boost: 0.9,
+            style: 1,
             use_speaker_boost: true,
           },
         }),
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     if (!response.ok) {
       const errorText = await response.text();
       return NextResponse.json(
-        { error: "ElevenLabs voice failed.", details: errorText },
+        { error: "ElevenLabs API error", details: errorText },
         { status: 500 }
       );
     }
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         "Content-Type": "audio/mpeg",
       },
     });
-  } catch {
+  } catch (err) {
     return NextResponse.json(
       { error: "Voice generation crashed." },
       { status: 500 }
