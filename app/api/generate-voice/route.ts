@@ -4,21 +4,14 @@ export async function POST(req: Request) {
   try {
     const { text } = await req.json();
 
-    if (!text) {
-      return NextResponse.json({ error: "Missing text." }, { status: 400 });
-    }
-
     const apiKey = process.env.ELEVENLABS_API_KEY;
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key not found in Vercel." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Missing API key" }, { status: 500 });
     }
 
     const response = await fetch(
-      "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
+      "https://api.elevenlabs.io/v1/text-to-speech",
       {
         method: "POST",
         headers: {
@@ -26,14 +19,8 @@ export async function POST(req: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          text,
+          text: text,
           model_id: "eleven_multilingual_v2",
-          voice_settings: {
-            stability: 0.2,
-            similarity_boost: 0.9,
-            style: 1,
-            use_speaker_boost: true,
-          },
         }),
       }
     );
@@ -53,9 +40,9 @@ export async function POST(req: Request) {
         "Content-Type": "audio/mpeg",
       },
     });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: "Voice generation crashed." },
+      { error: "Voice generation crashed" },
       { status: 500 }
     );
   }
