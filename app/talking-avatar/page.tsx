@@ -12,7 +12,19 @@ const voices = [
 ];
 
 function cleanPreview(text: string) {
-  return text.replace(/\*\*/g, "").replace(/###/g, "").replace(/#\w+/g, "").trim();
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/###/g, "")
+    .replace(/HOOK:/gi, "")
+    .replace(/CAPTION:/gi, "")
+    .replace(/SCRIPT:/gi, "")
+    .replace(/CTA:/gi, "")
+    .replace(/CALL TO ACTION:/gi, "")
+    .replace(/GUION:/gi, "")
+    .replace(/GUIÓN:/gi, "")
+    .replace(/LLAMADO A LA ACCIÓN:/gi, "")
+    .replace(/#\w+/g, "")
+    .trim();
 }
 
 export default function TalkingAvatarPage() {
@@ -43,8 +55,7 @@ export default function TalkingAvatarPage() {
     if (latestTalkId) setTalkId(latestTalkId);
   }, []);
 
-  function previewVoice() {
-    const selectedVoice = voices.find((v) => v.value === voiceId);
+  async function previewVoice() {
     const clean = cleanPreview(script);
 
     if (!clean) {
@@ -52,14 +63,28 @@ export default function TalkingAvatarPage() {
       return;
     }
 
-    window.speechSynthesis.cancel();
+    setMessage("Generating realistic ElevenLabs voice...");
 
-    const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.lang = selectedVoice?.lang || "en-US";
-    utterance.rate = speed;
+    const res = await fetch("/api/generate-voice", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text: clean }),
+    });
 
-    window.speechSynthesis.speak(utterance);
-    setMessage("Voice preview playing. No D-ID credits used.");
+    if (!res.ok) {
+      const data = await res.json();
+      setMessage(data.error || "Voice failed.");
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+
+    audio.play();
+    setMessage("Playing realistic voice. No D-ID credits used.");
   }
 
   async function createTalkingVideo() {
@@ -149,7 +174,7 @@ export default function TalkingAvatarPage() {
         <h1 className="mt-2 text-5xl font-bold">Talking Avatar Builder</h1>
 
         <p className="mt-3 text-zinc-400">
-          This is the only page that can use D-ID credits. Preview voice is free.
+          Preview realistic ElevenLabs voice for free before spending D-ID credits.
         </p>
 
         <div className="mt-8 rounded-3xl border border-blue-500/30 bg-blue-950/20 p-6">
@@ -200,7 +225,7 @@ export default function TalkingAvatarPage() {
             ))}
           </select>
 
-          <p className="mt-5 font-bold">Preview Speed: {speed}</p>
+          <p className="mt-5 font-bold">Browser Preview Speed: {speed}</p>
 
           <input
             type="range"
@@ -231,7 +256,7 @@ export default function TalkingAvatarPage() {
               onClick={previewVoice}
               className="rounded-xl bg-purple-600 px-5 py-3 font-bold"
             >
-              Preview Voice Free
+              Preview Realistic Voice
             </button>
 
             <button
