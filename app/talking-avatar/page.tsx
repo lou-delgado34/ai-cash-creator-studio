@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 
 const voices = [
-  { label: "English - Male", value: "en-US-GuyNeural", lang: "en-US" },
-  { label: "English - Female", value: "en-US-JennyNeural", lang: "en-US" },
-  { label: "Spanish Mexico - Male", value: "es-MX-JorgeNeural", lang: "es-MX" },
-  { label: "Spanish Mexico - Female", value: "es-MX-DaliaNeural", lang: "es-MX" },
-  { label: "Spanish Latino US - Male", value: "es-US-AlonsoNeural", lang: "es-US" },
-  { label: "Spanish Latino US - Female", value: "es-US-PalomaNeural", lang: "es-US" },
+  { label: "English - Male", value: "en-US-GuyNeural" },
+  { label: "English - Female", value: "en-US-JennyNeural" },
+  { label: "Spanish Mexico - Male", value: "es-MX-JorgeNeural" },
+  { label: "Spanish Mexico - Female", value: "es-MX-DaliaNeural" },
+  { label: "Spanish Latino US - Male", value: "es-US-AlonsoNeural" },
+  { label: "Spanish Latino US - Female", value: "es-US-PalomaNeural" },
 ];
 
 function cleanPreview(text: string) {
@@ -32,7 +32,6 @@ export default function TalkingAvatarPage() {
   const [selectedAvatar, setSelectedAvatar] = useState<any>(null);
   const [script, setScript] = useState("");
   const [voiceId, setVoiceId] = useState("en-US-GuyNeural");
-  const [speed, setSpeed] = useState(1);
   const [message, setMessage] = useState("");
   const [talkId, setTalkId] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -63,7 +62,7 @@ export default function TalkingAvatarPage() {
       return;
     }
 
-    setMessage("Generating realistic ElevenLabs voice...");
+    setMessage("Generating ElevenLabs voice...");
 
     const res = await fetch("/api/generate-voice", {
       method: "POST",
@@ -75,7 +74,7 @@ export default function TalkingAvatarPage() {
 
     if (!res.ok) {
       const data = await res.json();
-      setMessage(data.error || "Voice failed.");
+      setMessage(`${data.error || "Voice failed."} ${data.details || ""}`);
       return;
     }
 
@@ -84,7 +83,7 @@ export default function TalkingAvatarPage() {
     const audio = new Audio(url);
 
     audio.play();
-    setMessage("Playing realistic voice. No D-ID credits used.");
+    setMessage("Playing ElevenLabs voice. No D-ID credits used.");
   }
 
   async function createTalkingVideo() {
@@ -174,7 +173,7 @@ export default function TalkingAvatarPage() {
         <h1 className="mt-2 text-5xl font-bold">Talking Avatar Builder</h1>
 
         <p className="mt-3 text-zinc-400">
-          Preview realistic ElevenLabs voice for free before spending D-ID credits.
+          Preview ElevenLabs voice before spending D-ID video credits.
         </p>
 
         <div className="mt-8 rounded-3xl border border-blue-500/30 bg-blue-950/20 p-6">
@@ -225,18 +224,6 @@ export default function TalkingAvatarPage() {
             ))}
           </select>
 
-          <p className="mt-5 font-bold">Browser Preview Speed: {speed}</p>
-
-          <input
-            type="range"
-            min="0.7"
-            max="1.3"
-            step="0.1"
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="mt-3 w-full"
-          />
-
           <div className="mt-6 rounded-2xl border border-yellow-500/30 bg-yellow-950/20 p-5">
             <label className="flex cursor-pointer items-start gap-3">
               <input
@@ -256,7 +243,7 @@ export default function TalkingAvatarPage() {
               onClick={previewVoice}
               className="rounded-xl bg-purple-600 px-5 py-3 font-bold"
             >
-              Preview Realistic Voice
+              Preview ElevenLabs Voice
             </button>
 
             <button
@@ -282,7 +269,11 @@ export default function TalkingAvatarPage() {
             </a>
           </div>
 
-          {message && <p className="mt-5 text-yellow-400">{message}</p>}
+          {message && (
+            <p className="mt-5 whitespace-pre-wrap break-words text-yellow-400">
+              {message}
+            </p>
+          )}
         </div>
 
         {videoUrl && (
